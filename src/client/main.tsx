@@ -1,0 +1,557 @@
+import { render } from "preact";
+import { useState, useEffect, useCallback, useRef } from "preact/hooks";
+
+// ─── API helpers ───────────────────────────────────────────────────────────────
+
+async function api(path: string, opts?: RequestInit) {
+  const res = await fetch(`/api${path}`, {
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json", ...(opts?.headers ?? {}) },
+    ...opts,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+// ─── Components ────────────────────────────────────────────────────────────────
+
+function App() {
+  const [agents, setAgents] = useState<any[]>([]);
+  const [selectedAgent, setSelectedAgent] = useState<any>(null);
+  const [view, setView] = useState<"list" | "chat" | "add">("list");
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refreshAgents = useCallback(async () => {
+    try {
+      const data = await api("/agents");
+      setAgents(data.agents || []);
+    } catch (e) {
+      console.error("Failed to load agents:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const me = await api("/auth/me");
+        setUser(me.user);
+      } catch {}
+      await refreshAgents();
+      setLoading(false);
+    })();
+  }, []);
+
+  const s = (extra?: string) => ({
+    style: { ...(extra ? Object.fromEntries(extra.split(";").filter(Boolean).map(p => {
+      const [k, v] = p.trim().split(":");
+      return [k.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), v.trim()];
+    })) : {}) },
+  });
+
+  if (loading) return html`<div style=${{ padding: "2rem", color: "var(--text-dim)" }}>Loading…</div>`;
+
+  return html`
+    <div style=${{ display: "flex", height: "100vh", overflow: "hidden" }}>
+      ${/* Sidebar */ ""}
+      <aside style=${{
+        width: "280px", borderRight: "1px solid var(--border)", display: "flex", flexDirection: "column",
+        background: "var(--bg-card)", flexShrink: 0,
+      }}>
+        <div style=${{ padding: "1.25rem", borderBottom: "1px solid var(--border)" }}>
+          <h1 style=${{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            🎵 Orchestral
+          </h1>
+          <p style=${{ fontSize: "0.75rem", color: "var(--text-dim)", marginTop: "0.25rem" }}>
+            A2A Agent Console
+          </p>
+        </div>
+
+        <div style=${{ padding: "0.75rem" }}>
+          <button
+            onClick=${() => { setView("add"); setSelectedAgent(null); }}
+            style=${{
+              width: "100%", padding: "0.6rem 0.75rem", borderRadius: "var(--radius)",
+              background: "var(--accent)", color: "white", border: "none", cursor: "pointer",
+              fontWeight: 600, fontSize: "0.85rem",
+            }}
+          >
+            + Add Agent
+          </button>
+        </div>
+
+        <div style=${{ flex: 1, overflowY: "auto", padding: "0 0.75rem" }}>
+          ${agents.map(agent => html`
+            <button
+              key=${agent.id}
+              onClick=${() => { setSelectedAgent(agent); setView("chat"); }}
+              style=${{
+                width: "100%", textAlign: "left", padding: "0.75rem", marginBottom: "0.25rem",
+                borderRadius: "var(--radius)", border: "1px solid transparent",
+                background: selectedAgent?.id === agent.id ? "var(--bg-hover)" : "transparent",
+                color: "var(--text)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.5rem",
+              }}
+            >
+              ${agent.icon_url
+                ? html`<img src=${agent.icon_url} style=${{ width: "1.5rem", height: "1.5rem", borderRadius: "50%" }} />`
+                : html`<span style=${{ fontSize: "1.25rem" }}>🤖</span>`
+              }
+              <div style=${{ flex: 1, minWidth: 0 }}>
+                <div style=${{ fontSize: "0.85rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  ${agent.name}
+                </div>
+                <div style=${{
+                  fontSize: "0.7rem", marginTop: "0.15rem",
+                  color: agent.auth_state === "connected" ? "var(--success)" : "var(--warning)",
+                }}>
+                  ${agent.auth_state === "connected" ? "● Connected" : "○ Needs auth"}
+                </div>
+              </div>
+            </button>
+          `)}
+        </div>
+
+        <div style=${{ padding: "0.75rem", borderTop: "1px solid var(--border)" }}>
+          ${user
+            ? html`<div style=${{ fontSize: "0.75rem", color: "var(--text-dim)" }}>
+              Signed in as ${user.name || user.email || user.sub}
+              <br/><a href="/api/auth/logout" style=${{ color: "var(--accent)" }}>Log out</a>
+            </div>`
+            : html`<div style=${{ fontSize: "0.75rem", color: "var(--text-dim)" }}>
+              Dev mode — no auth required
+            </div>`
+          }
+        </div>
+      </aside>
+
+      ${/* Main content */ ""}
+      <main style=${{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        ${view === "add" && html`<${AddAgent} onAdded=${(a) => { refreshAgents(); setSelectedAgent(a); setView("chat"); }} />`}
+        ${view === "chat" && selectedAgent && html`<${ChatView} agent=${selectedAgent} onRefresh=${refreshAgents} />`}
+        ${view === "list" && html`<${EmptyState} />`}
+      </main>
+    </div>
+  `;
+}
+
+function EmptyState() {
+  return html`
+    <div style=${{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "var(--text-dim)" }}>
+      <div style=${{ fontSize: "3rem", marginBottom: "1rem" }}>🎵</div>
+      <p style=${{ fontSize: "1rem" }}>Select an agent or add a new one to get started</p>
+      <p style=${{ fontSize: "0.8rem", marginTop: "0.5rem", color: "var(--text-dimmer)" }}>
+        Orchestral connects to A2A agents via OIDC and lets you message them
+      </p>
+    </div>
+  `;
+}
+
+function AddAgent({ onAdded }: any) {
+  const [cardUrl, setCardUrl] = useState("");
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<any>(null);
+
+  async function handlePreview() {
+    setError("");
+    setPreview(null);
+    setLoading(true);
+    try {
+      const data = await api("/agents", {
+        method: "POST",
+        body: JSON.stringify({ card_url: cardUrl, oidc_client_id: clientId, oidc_client_secret: clientSecret }),
+      });
+      onAdded(data.agent);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return html`
+    <div style=${{ maxWidth: "640px", margin: "0 auto", padding: "2rem", overflowY: "auto", flex: 1 }}>
+      <h2 style=${{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Add A2A Agent</h2>
+
+      <div style=${{ marginBottom: "1.5rem" }}>
+        <label style=${{ display: "block", fontSize: "0.85rem", color: "var(--text-dim)", marginBottom: "0.4rem" }}>
+          Agent Card URL
+        </label>
+        <input
+          type="text"
+          value=${cardUrl}
+          onInput=${(e: any) => setCardUrl(e.target.value)}
+          placeholder="https://agent.example.com"
+          style=${inputStyle}
+        />
+        <p style=${{ fontSize: "0.75rem", color: "var(--text-dimmer)", marginTop: "0.4rem" }}>
+          The URL where the agent publishes its Agent Card. Orchestral will fetch /.well-known/agent-card.json
+        </p>
+      </div>
+
+      <details style=${{ marginBottom: "1.5rem" }}>
+        <summary style=${{ cursor: "pointer", fontSize: "0.85rem", color: "var(--text-dim)" }}>
+          OIDC client ID (optional — only needed for authorization code flow)
+        </summary>
+        <div style=${{ marginTop: "0.75rem" }}>
+          <p style=${{ fontSize: "0.75rem", color: "var(--text-dimmer)", marginBottom: "0.5rem" }}>
+            If the agent requires OIDC, you can connect via device code flow (no configuration needed),
+            or provide a client ID for the authorization code flow (requires a registered redirect URI).
+          </p>
+          <label style=${{ display: "block", fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "0.3rem" }}>
+            Client ID (optional)
+          </label>
+          <input type="text" value=${clientId} onInput=${(e: any) => setClientId(e.target.value)} style=${inputStyle} />
+        </div>
+      </details>
+
+      ${error && html`<div style=${{ padding: "0.75rem", background: "rgba(239,68,68,0.1)", border: "1px solid var(--danger)", borderRadius: "var(--radius)", color: "var(--danger)", fontSize: "0.85rem", marginBottom: "1rem" }}>
+        ${error}
+      </div>`}
+
+      <button
+        onClick=${handlePreview}
+        disabled=${!cardUrl || loading}
+        style=${{
+          padding: "0.6rem 1.5rem", borderRadius: "var(--radius)", background: "var(--accent)",
+          color: "white", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem",
+          opacity: (!cardUrl || loading) ? 0.5 : 1,
+        }}
+      >
+        ${loading ? "Connecting…" : "Add Agent"}
+      </button>
+    </div>
+  `;
+}
+
+function ChatView({ agent, onRefresh }: any) {
+  const [messages, setMessages] = useState<any[]>([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [convId, setConvId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [agentDetail, setAgentDetail] = useState<any>(agent);
+  const messagesEnd = useRef<any>(null);
+  const eventSource = useRef<AbortController | null>(null);
+
+  // Load agent detail
+  useEffect(() => {
+    api(`/agents/${agent.id}`).then(d => setAgentDetail(d)).catch(() => {});
+  }, [agent.id]);
+
+  // Create conversation on first load
+  useEffect(() => {
+    api(`/agents/${agent.id}/conversations`)
+      .then(async (data) => {
+        if (data.conversations && data.conversations.length > 0) {
+          const conv = data.conversations[0];
+          setConvId(conv.id);
+          const msgs = await api(`/conversations/${conv.id}/messages`);
+          setMessages(msgs.messages || []);
+        } else {
+          const conv = await api(`/agents/${agent.id}/conversations`, { method: "POST" });
+          setConvId(conv.conversation.id);
+        }
+      })
+      .catch(e => setError(e.message));
+  }, [agent.id]);
+
+  // Auto-scroll
+  useEffect(() => {
+    messagesEnd.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  async function handleSend(e?: any) {
+    e?.preventDefault();
+    if (!input.trim() || !convId || sending) return;
+    const text = input.trim();
+    setInput("");
+    setSending(true);
+    setError("");
+
+    // Optimistic: add user message
+    setMessages(prev => [...prev, { role: "user", text, created_at: Date.now() / 1000, id: "temp-" + Date.now() }]);
+    // Add placeholder for agent response
+    setMessages(prev => [...prev, { role: "agent", text: "", created_at: Date.now() / 1000, id: "temp-agent-" + Date.now(), streaming: true }]);
+
+    try {
+      // Try streaming first
+      const supportsStreaming = agentDetail?.agent_card?.capabilities?.streaming ?? true;
+      if (supportsStreaming) {
+        await streamMessage(text);
+      } else {
+        await sendNonStreaming(text);
+      }
+    } catch (err: any) {
+      setError(err.message);
+      if (err.message.includes("Authentication")) {
+        onRefresh();
+      }
+      // Remove the streaming placeholder
+      setMessages(prev => prev.filter(m => !m.streaming));
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function streamMessage(text: string) {
+    const res = await fetch(`/api/conversations/${convId}/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+      credentials: "same-origin",
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(body.error || `HTTP ${res.status}`);
+    }
+
+    const reader = res.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let fullText = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      const events = buffer.split("\n\n");
+      buffer = events.pop() || "";
+
+      for (const event of events) {
+        for (const line of event.split("\n")) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.error) throw new Error(data.error);
+
+              // Extract text from various response types
+              let chunk = "";
+              if (data.task?.status?.message?.parts) {
+                chunk = data.task.status.message.parts.map((p: any) => p.text || "").join("");
+              } else if (data.message?.parts) {
+                chunk = data.message.parts.map((p: any) => p.text || "").join("");
+              } else if (data.artifactUpdate?.artifact?.parts) {
+                chunk = data.artifactUpdate.artifact.parts.map((p: any) => p.text || "").join("");
+              } else if (data.statusUpdate?.status?.message?.parts) {
+                chunk = data.statusUpdate.status.message.parts.map((p: any) => p.text || "").join("");
+              }
+
+              if (chunk) {
+                fullText += chunk;
+                // Update the streaming message
+                setMessages(prev => prev.map(m =>
+                  m.streaming ? { ...m, text: fullText } : m
+                ));
+              }
+            } catch (parseErr: any) {
+              if (parseErr.message) throw parseErr;
+            }
+          }
+        }
+      }
+    }
+
+    // Finalize: reload messages from server to get proper IDs
+    if (convId) {
+      const msgs = await api(`/conversations/${convId}/messages`);
+      setMessages(msgs.messages || []);
+    }
+  }
+
+  async function sendNonStreaming(text: string) {
+    const data = await api(`/conversations/${convId}/send`, {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    });
+    const msgs = await api(`/conversations/${convId}/messages`);
+    setMessages(msgs.messages || []);
+  }
+
+  // Connect button for agents needing OIDC
+  const [connecting, setConnecting] = useState(false);
+  const [clientIdInput, setClientIdInput] = useState("");
+  const [clientSecretInput, setClientSecretInput] = useState("");
+
+  async function handleConnect() {
+    setConnecting(true);
+    setError("");
+    try {
+      // Save credentials first
+      await api(`/agents/${agent.id}/credentials`, {
+        method: "POST",
+        body: JSON.stringify({ client_id: clientIdInput, client_secret: clientSecretInput }),
+      });
+      // Redirect to the OIDC authorization flow
+      window.location.href = `/api/agents/${agent.id}/connect`;
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setConnecting(false);
+    }
+  }
+
+  const needsAuth = agentDetail?.auth_state !== "connected";
+  const redirectUri = typeof window !== "undefined" ? `${window.location.origin}/api/agent/oidc/callback` : "";
+
+  return html`
+    <div style=${{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      ${/* Header */ ""}
+      <header style=${{ padding: "1rem 1.5rem", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        ${agentDetail?.icon_url
+          ? html`<img src=${agentDetail.icon_url} style=${{ width: "2rem", height: "2rem", borderRadius: "50%" }} />`
+          : html`<span style=${{ fontSize: "1.5rem" }}>🤖</span>`
+        }
+        <div style=${{ flex: 1 }}>
+          <h2 style=${{ fontSize: "1rem", fontWeight: 600 }}>${agentDetail?.name || agent.name}</h2>
+          ${agentDetail?.description && html`<p style=${{ fontSize: "0.75rem", color: "var(--text-dim)" }}>${agentDetail.description}</p>`}
+        </div>
+        <div style=${{
+          padding: "0.25rem 0.6rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 600,
+          background: needsAuth ? "rgba(245,158,11,0.1)" : "rgba(34,197,94,0.1)",
+          color: needsAuth ? "var(--warning)" : "var(--success)",
+          border: `1px solid ${needsAuth ? "var(--warning)" : "var(--success)"}`,
+        }}>
+          ${needsAuth ? "Needs Auth" : "Connected"}
+        </div>
+      </header>
+
+      ${needsAuth && html`
+        <div style=${{ padding: "1.5rem", borderBottom: "1px solid var(--border)", maxWidth: "600px" }}>
+          <p style=${{ color: "var(--text)", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
+            This agent requires OIDC via Pocket ID.
+          </p>
+          <p style=${{ color: "var(--text-dim)", marginBottom: "1rem", fontSize: "0.8rem" }}>
+            Enter think's Pocket ID client ID. If the client is set to <strong>public</strong> in
+            <a href="https://id.openbao.boxd.sh/settings/admin/oidc-clients" target="_blank" style=${{ color: "var(--accent)" }}>Pocket ID admin</a>,
+            no secret is needed — PKCE handles it. Otherwise include the secret too.
+          </p>
+          <div style=${{ marginBottom: "0.75rem" }}>
+            <label style=${{ display: "block", fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "0.3rem" }}>
+              Client ID
+            </label>
+            <input
+              type="text"
+              value=${clientIdInput}
+              onInput=${(e: any) => setClientIdInput(e.target.value)}
+              placeholder="Pocket ID client ID"
+              style=${{ ...inputStyle, width: "100%" }}
+            />
+          </div>
+          <div style=${{ marginBottom: "0.75rem" }}>
+            <label style=${{ display: "block", fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "0.3rem" }}>
+              Client Secret
+            </label>
+            <input
+              type="password"
+              value=${clientSecretInput}
+              onInput=${(e: any) => setClientSecretInput(e.target.value)}
+              placeholder="Pocket ID client secret"
+              style=${{ ...inputStyle, width: "100%" }}
+            />
+          </div>
+          <div style=${{ padding: "0.6rem", background: "var(--bg)", borderRadius: "8px", marginBottom: "1rem", fontSize: "0.75rem", color: "var(--text-dim)" }}>
+            <strong style=${{ color: "var(--warning)" }}>One-time setup:</strong> Add this redirect URI to this client in Pocket ID:
+            <br/>
+            <code style=${{ color: "var(--accent)", fontSize: "0.7rem", wordBreak: "break-all" }}>${redirectUri}</code>
+            <br/>
+            <a href="https://id.openbao.boxd.sh/settings/admin/oidc-clients" target="_blank" style=${{ color: "var(--accent)", fontSize: "0.7rem" }}>
+              → Pocket ID admin
+            </a>
+          </div>
+          <button onClick=${handleConnect} disabled=${!clientIdInput || connecting} style=${{
+            padding: "0.6rem 1.5rem", borderRadius: "var(--radius)", background: "var(--accent)",
+            color: "white", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem",
+            opacity: (!clientIdInput || connecting) ? 0.5 : 1,
+          }}>
+            ${connecting ? "Redirecting…" : "🔑 Connect"}
+          </button>
+        </div>
+      `}
+
+      ${/* Messages */ ""}
+      <div style=${{ flex: 1, overflowY: "auto", padding: "1.5rem" }}>
+        <div style=${{ maxWidth: "720px", margin: "0 auto", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          ${messages.length === 0 && !needsAuth && html`
+            <div style=${{ textAlign: "center", padding: "3rem", color: "var(--text-dimmer)" }}>
+              <p style=${{ fontSize: "0.9rem" }}>Send a message to start talking to this agent via A2A</p>
+            </div>
+          `}
+          ${messages.map(msg => html`
+            <div key=${msg.id} style=${{
+              maxWidth: "85%", alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+              padding: "0.6rem 0.9rem", borderRadius: "var(--radius)", fontSize: "0.875rem", lineHeight: 1.5,
+              background: msg.role === "user" ? "var(--accent)" : "var(--bg-card)",
+              color: msg.role === "user" ? "white" : "var(--text)",
+              whiteSpace: "pre-wrap",
+            }}>
+              ${msg.text || (msg.streaming ? "…" : "")}
+            </div>
+          `)}
+          <div ref=${messagesEnd} />
+        </div>
+      </div>
+
+      ${error && html`
+        <div style=${{ padding: "0.5rem 1.5rem", color: "var(--danger)", fontSize: "0.8rem" }}>
+          ${error}
+        </div>
+      `}
+
+      ${/* Input */ ""}
+      <footer style=${{ borderTop: "1px solid var(--border)", padding: "1rem 1.5rem" }}>
+        <form onSubmit=${handleSend} style=${{ maxWidth: "720px", margin: "0 auto", display: "flex", gap: "0.5rem" }}>
+          <input
+            type="text"
+            value=${input}
+            onInput=${(e: any) => setInput(e.target.value)}
+            placeholder=${needsAuth ? "Connect to start messaging…" : "Send a message…"}
+            disabled=${needsAuth || sending}
+            style=${{
+              flex: 1, padding: "0.6rem 0.9rem", borderRadius: "var(--radius)",
+              background: "var(--bg-card)", border: "1px solid var(--border)", color: "var(--text)",
+              fontSize: "0.875rem", outline: "none",
+              opacity: (needsAuth || sending) ? 0.5 : 1,
+            }}
+          />
+          <button type="submit" disabled=${needsAuth || sending || !input.trim()} style=${{
+            padding: "0.6rem 1.2rem", borderRadius: "var(--radius)", background: "var(--accent)",
+            color: "white", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.85rem",
+            opacity: (needsAuth || sending || !input.trim()) ? 0.5 : 1,
+          }}>
+            ${sending ? "…" : "Send"}
+          </button>
+        </form>
+      </footer>
+    </div>
+  `;
+}
+
+// ─── Styles ────────────────────────────────────────────────────────────────────
+
+const inputStyle = {
+  width: "100%",
+  padding: "0.6rem 0.9rem",
+  borderRadius: "var(--radius)",
+  background: "var(--bg-card)",
+  border: "1px solid var(--border)",
+  color: "var(--text)",
+  fontSize: "0.875rem",
+  outline: "none",
+};
+
+// ─── HTML helper (using htm/preact) ─────────────────────────────────────────────
+// We use a lightweight JSX alternative via tagged templates
+
+import { html } from "htm/preact";
+
+// ─── Render ────────────────────────────────────────────────────────────────────
+
+render(html`<${App} />`, document.getElementById("root")!);

@@ -1,0 +1,24 @@
+{
+  "name": "orchestral",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot src/server/index.ts",
+    "build:client": "bun build src/client/main.tsx --outdir public --minify --entry-naming app.js",
+    "build": "bun run build:client",
+    "start": "bun run src/server/index.ts"
+  },
+  "dependencies": {
+    "hono": "^4.7.0",
+    "jose": "^6.0.0"
+  },
+  "clientDependencies": {
+    "preact": "^10.25.0",
+    "htm": "^3.1.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "preact": "^10.25.0",
+    "htm": "^3.1.1"
+  }
+}
