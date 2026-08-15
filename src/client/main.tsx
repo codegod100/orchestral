@@ -121,7 +121,7 @@ function App() {
               <br/><a href="/api/auth/logout" style=${{ color: "var(--accent)" }}>Log out</a>
             </div>`
             : html`<div style=${{ fontSize: "0.75rem", color: "var(--text-dim)" }}>
-              Dev mode — no auth required
+              <a href="/api/auth/login" style=${{ color: "var(--accent)" }}>Sign in with Pocket ID</a>
             </div>`
           }
         </div>

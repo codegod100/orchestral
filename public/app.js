@@ -46,7 +46,7 @@ var Z0,L,k0,Q1,S,C0,I0,y0,N0,e,i,A0,V0,z0,H0,W1,n={},O0=[],X1=/acit|ex(?:s|g|n|p
               Signed in as ${X.name||X.email||X.sub}
               <br/><a href="/api/auth/logout" style=${{color:"var(--accent)"}}>Log out</a>
             </div>`:b`<div style=${{fontSize:"0.75rem",color:"var(--text-dim)"}}>
-              Dev mode — no auth required
+              <a href="/api/auth/login" style=${{color:"var(--accent)"}}>Sign in with Pocket ID</a>
             </div>`}
         </div>
       </aside>
