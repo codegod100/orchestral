@@ -73,12 +73,23 @@ bun run build
 # Dev mode (no auth required for the console itself)
 bun run dev
 
-# Or with OIDC auth for the console:
-export OIDC_CLIENT_SECRET="your-pocket-id-client-secret"
+# Or with OIDC auth for the console (the client must first be registered in Pocket ID):
+export OIDC_ISSUER="https://id.openbao.boxd.sh"
+export OIDC_CLIENT_ID="d64f29d9-7239-46e7-8a62-d7aa42b07603"
+# Public clients use PKCE and do not need a client secret
+unset OIDC_CLIENT_SECRET
+export ORCHESTRAL_URL="https://orchestral.example.com" # the public URL users visit
 bun run dev
 ```
 
-Open `http://localhost:4747`.
+In Pocket ID, register an OIDC application and add this **exact** redirect URI:
+`https://orchestral.example.com/api/auth/callback` (or
+`http://localhost:4747/api/auth/callback` for local-only testing). Use the registered client ID above. Orchestral uses Authorization Code + PKCE,
+so a Pocket ID public client does not require a client secret. If `OIDC_CLIENT_ID` is omitted, the console stays in development mode; if it
+is set to a value that was not registered in Pocket ID, Pocket ID responds with
+“The requested OAuth 2.0 Client does not exist.”
+
+Open `http://localhost:4747` (or the configured public URL).
 
 ### 4. Test with the mock A2A server
 

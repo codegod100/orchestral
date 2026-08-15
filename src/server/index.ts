@@ -41,13 +41,13 @@ const ORCHESTRAL_URL = process.env.ORCHESTRAL_URL ?? `http://localhost:${PORT}`;
 // Orchestral's own OIDC (for the user to log in to the console itself).
 // Uses Pocket ID (same as think.latha.org).
 const CONSOLE_OIDC_ISSUER = process.env.OIDC_ISSUER ?? "https://id.openbao.boxd.sh";
-const CONSOLE_OIDC_CLIENT_ID = process.env.OIDC_CLIENT_ID ?? "orchestral";
+const CONSOLE_OIDC_CLIENT_ID = process.env.OIDC_CLIENT_ID ?? "d64f29d9-7239-46e7-8a62-d7aa42b07603";
 const CONSOLE_OIDC_CLIENT_SECRET = process.env.OIDC_CLIENT_SECRET ?? "";
 const SESSION_SECRET = process.env.SESSION_SECRET ?? "orchestral-dev-secret-change-me";
-const SESSION_COOKIE = "__Host-orchestral_session";
-const OAUTH_STATE_COOKIE = "__Host-orchestral_oauth_state";
-const PKCE_VERIFIER_COOKIE = "__Host-orchestral_pkce";
-const RETURN_URL_COOKIE = "__Host-orchestral_return";
+const SESSION_COOKIE = "orchestral_session";
+const OAUTH_STATE_COOKIE = "orchestral_oauth_state";
+const PKCE_VERIFIER_COOKIE = "orchestral_pkce";
+const RETURN_URL_COOKIE = "orchestral_return";
 const AGENT_OIDC_REDIRECT = `${ORCHESTRAL_URL}/api/agent/oidc/callback`;
 const CONSOLE_OIDC_REDIRECT = `${ORCHESTRAL_URL}/api/auth/callback`;
 
@@ -85,7 +85,11 @@ const app = new Hono();
 // ─── Auth middleware ───────────────────────────────────────────────────────────
 
 // Skip auth in dev mode if no OIDC client secret configured
-const AUTH_ENABLED = CONSOLE_OIDC_CLIENT_SECRET !== "";
+const AUTH_ENABLED = CONSOLE_OIDC_CLIENT_ID !== "";
+// Secure cookies are required in production, but must be disabled for the
+// documented http://localhost development URL or the browser will drop PKCE
+// state cookies before the callback.
+const COOKIE_SECURE = ORCHESTRAL_URL.startsWith("https://");
 
 app.use("/api/*", async (c, next) => {
   // Allow auth-related endpoints without session
@@ -136,9 +140,9 @@ app.get("/api/auth/login", async (c) => {
     codeChallenge: challenge,
   });
 
-  setCookie(c, OAUTH_STATE_COOKIE, state, { maxAge: 600, path: "/", httpOnly: true, secure: true, sameSite: "Lax" });
-  setCookie(c, PKCE_VERIFIER_COOKIE, verifier, { maxAge: 600, path: "/", httpOnly: true, secure: true, sameSite: "Lax" });
-  setCookie(c, RETURN_URL_COOKIE, returnUrl, { maxAge: 600, path: "/", httpOnly: true, secure: true, sameSite: "Lax" });
+  setCookie(c, OAUTH_STATE_COOKIE, state, { maxAge: 600, path: "/", httpOnly: true, secure: COOKIE_SECURE, sameSite: "Lax" });
+  setCookie(c, PKCE_VERIFIER_COOKIE, verifier, { maxAge: 600, path: "/", httpOnly: true, secure: COOKIE_SECURE, sameSite: "Lax" });
+  setCookie(c, RETURN_URL_COOKIE, returnUrl, { maxAge: 600, path: "/", httpOnly: true, secure: COOKIE_SECURE, sameSite: "Lax" });
 
   return c.redirect(authUrl);
 });
@@ -186,7 +190,7 @@ app.get("/api/auth/callback", async (c) => {
   }
 
   const session = await createSession(SESSION_SECRET, { sub, email, name });
-  setCookie(c, SESSION_COOKIE, session, { maxAge: 7 * 24 * 3600, path: "/", httpOnly: true, secure: true, sameSite: "Lax" });
+  setCookie(c, SESSION_COOKIE, session, { maxAge: 7 * 24 * 3600, path: "/", httpOnly: true, secure: COOKIE_SECURE, sameSite: "Lax" });
 
   // Store original OIDC tokens so they can be reused for agents using the same issuer
   if (tokens.access_token || tokens.id_token) {
