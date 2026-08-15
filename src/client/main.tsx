@@ -234,6 +234,7 @@ function ChatView({ agent, onRefresh }: any) {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [convId, setConvId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<any[]>([]);
   const [error, setError] = useState("");
   const [agentDetail, setAgentDetail] = useState<any>(agent);
   const messagesEnd = useRef<any>(null);
@@ -244,22 +245,55 @@ function ChatView({ agent, onRefresh }: any) {
     api(`/agents/${agent.id}`).then(d => setAgentDetail(d)).catch(() => {});
   }, [agent.id]);
 
-  // Create conversation on first load
+  const openConversation = useCallback(async (id: string) => {
+    setConvId(id);
+    const msgs = await api(`/conversations/${id}/messages`);
+    setMessages(msgs.messages || []);
+  }, []);
+
+  // Load (or create) a conversation on first load of this agent
   useEffect(() => {
-    api(`/agents/${agent.id}/conversations`)
-      .then(async (data) => {
-        if (data.conversations && data.conversations.length > 0) {
-          const conv = data.conversations[0];
-          setConvId(conv.id);
-          const msgs = await api(`/conversations/${conv.id}/messages`);
-          setMessages(msgs.messages || []);
+    (async () => {
+      try {
+        const data = await api(`/agents/${agent.id}/conversations`);
+        const convs = data.conversations || [];
+        setConversations(convs);
+        if (convs.length > 0) {
+          await openConversation(convs[0].id);
         } else {
           const conv = await api(`/agents/${agent.id}/conversations`, { method: "POST" });
+          setConversations([conv.conversation]);
           setConvId(conv.conversation.id);
+          setMessages([]);
         }
-      })
-      .catch(e => setError(e.message));
+      } catch (e: any) {
+        setError(e.message);
+      }
+    })();
   }, [agent.id]);
+
+  async function handleNewConversation() {
+    setError("");
+    try {
+      const data = await api(`/agents/${agent.id}/conversations`, { method: "POST" });
+      setConversations(prev => [data.conversation, ...prev]);
+      setConvId(data.conversation.id);
+      setMessages([]);
+      setInput("");
+    } catch (e: any) {
+      setError(e.message);
+    }
+  }
+
+  async function handleSwitchConversation(id: string) {
+    if (id === convId) return;
+    setError("");
+    try {
+      await openConversation(id);
+    } catch (e: any) {
+      setError(e.message);
+    }
+  }
 
   // Auto-scroll
   useEffect(() => {
@@ -413,6 +447,33 @@ function ChatView({ agent, onRefresh }: any) {
           <h2 style=${{ fontSize: "1rem", fontWeight: 600 }}>${agentDetail?.name || agent.name}</h2>
           ${agentDetail?.description && html`<p style=${{ fontSize: "0.75rem", color: "var(--text-dim)" }}>${agentDetail.description}</p>`}
         </div>
+        ${conversations.length > 1 && html`
+          <select
+            value=${convId}
+            onChange=${(e: any) => handleSwitchConversation(e.target.value)}
+            style=${{
+              padding: "0.4rem 0.6rem", borderRadius: "var(--radius)", background: "var(--bg-card)",
+              border: "1px solid var(--border)", color: "var(--text)", fontSize: "0.75rem", outline: "none",
+            }}
+          >
+            ${conversations.map((conv, i) => html`
+              <option key=${conv.id} value=${conv.id}>
+                ${new Date(conv.created_at * 1000).toLocaleString()} ${i === 0 ? "(latest)" : ""}
+              </option>
+            `)}
+          </select>
+        `}
+        <button
+          onClick=${handleNewConversation}
+          title="Start a new conversation with this agent"
+          style=${{
+            padding: "0.4rem 0.75rem", borderRadius: "var(--radius)", background: "var(--bg-card)",
+            border: "1px solid var(--border)", color: "var(--text)", cursor: "pointer",
+            fontWeight: 600, fontSize: "0.75rem",
+          }}
+        >
+          + New Conversation
+        </button>
         <div style=${{
           padding: "0.25rem 0.6rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 600,
           background: needsAuth ? "rgba(245,158,11,0.1)" : "rgba(34,197,94,0.1)",
