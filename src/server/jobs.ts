@@ -16,18 +16,38 @@ const JOB_TIMEOUT_MS = 10 * 60 * 1000; // 10 min per boxd exec step
 // ─── boxd helpers ────────────────────────────────────────────────────────────
 
 async function runCmd(cmd: string[], opts?: { timeoutMs?: number }): Promise<{ code: number; stdout: string; stderr: string }> {
-  const proc = Bun.spawn(cmd, { stdout: "pipe", stderr: "pipe" });
-  const timeout = opts?.timeoutMs ?? JOB_TIMEOUT_MS;
-  const timer = setTimeout(() => proc.kill(), timeout);
-  try {
+  // stdin: "ignore" — inheriting the server's stdin risks a hang if the child
+  // ever reads from it (it's open but never sends anything in this context).
+  const proc = Bun.spawn(cmd, { stdout: "pipe", stderr: "pipe", stdin: "ignore" });
+  const timeoutMs = opts?.timeoutMs ?? JOB_TIMEOUT_MS;
+
+  const collect = (async () => {
     const [stdout, stderr] = await Promise.all([
       new Response(proc.stdout).text(),
       new Response(proc.stderr).text(),
     ]);
     const code = await proc.exited;
     return { code, stdout, stderr };
+  })();
+
+  // Race against the timeout instead of relying on proc.kill() alone — if the
+  // child ignores SIGTERM or its pipes never close, awaiting `collect` above
+  // would hang forever even after kill() is called.
+  const timedOut = Symbol("timeout");
+  let timeoutHandle: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<typeof timedOut>((resolve) => {
+    timeoutHandle = setTimeout(() => resolve(timedOut), timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([collect, timeout]);
+    if (result === timedOut) {
+      proc.kill("SIGKILL");
+      throw new Error(`command timed out after ${timeoutMs}ms: ${cmd.join(" ")}`);
+    }
+    return result;
   } finally {
-    clearTimeout(timer);
+    clearTimeout(timeoutHandle!);
   }
 }
 
