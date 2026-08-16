@@ -1,5 +1,5 @@
-var G0,L,I0,q1,m,C0,x0,S0,H0,t,i,v0,$0,N0,V0,B1,O0={},Y0=[],z1=/acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i,Q0=Array.isArray;function x(Y,O){for(var Z in O)Y[Z]=O[Z];return Y}function j0(Y){Y&&Y.parentNode&&Y.parentNode.removeChild(Y)}function W0(Y,O,Z){var G,K,Q,X={};for(Q in O)Q=="key"?G=O[Q]:Q=="ref"?K=O[Q]:X[Q]=O[Q];if(arguments.length>2&&(X.children=arguments.length>3?G0.call(arguments,2):Z),typeof Y=="function"&&Y.defaultProps!=null)for(Q in Y.defaultProps)X[Q]===void 0&&(X[Q]=Y.defaultProps[Q]);return n(Y,X,G,K,null)}function n(Y,O,Z,G,K){var Q={type:Y,props:O,key:Z,ref:G,__k:null,__:null,__b:0,__e:null,__c:null,constructor:void 0,__v:K==null?++I0:K,__i:-1,__u:0};return K==null&&L.vnode!=null&&L.vnode(Q),Q}function X0(Y){return Y.children}function p(Y,O){this.props=Y,this.context=O}function g(Y,O){if(O==null)return Y.__?g(Y.__,Y.__i+1):null;for(var Z;O<Y.__k.length;O++)if((Z=Y.__k[O])!=null&&Z.__e!=null)return Z.__e;return typeof Y.type=="function"?g(Y):null}function H1(Y){if(Y.__P&&Y.__d){var O=Y.__v,Z=O.__e,G=[],K=[],Q=x({},O);Q.__v=O.__v+1,L.vnode&&L.vnode(Q),L0(Y.__P,Q,O,Y.__n,Y.__P.namespaceURI,32&O.__u?[Z]:null,G,Z==null?g(O):Z,!!(32&O.__u),K),Q.__v=O.__v,Q.__.__k[Q.__i]=Q,d0(G,Q,K),O.__e=O.__=null,Q.__e!=Z&&m0(Q)}}function m0(Y){if((Y=Y.__)!=null&&Y.__c!=null)return Y.__e=Y.__c.base=null,Y.__k.some(function(O){if(O!=null&&O.__e!=null)return Y.__e=Y.__c.base=O.__e}),m0(Y)}function k0(Y){(!Y.__d&&(Y.__d=!0)&&m.push(Y)&&!Z0.__r++||C0!=L.debounceRendering)&&((C0=L.debounceRendering)||x0)(Z0)}function Z0(){try{for(var Y,O=1;m.length;)m.length>O&&m.sort(S0),Y=m.shift(),O=m.length,H1(Y)}finally{m.length=Z0.__r=0}}function f0(Y,O,Z,G,K,Q,X,q,B,J,H){var $,W,z,V,F,U,D=G&&G.__k||Y0,j=O.length;for(B=N1(Z,O,D,B,j),$=0;$<j;$++)(z=Z.__k[$])!=null&&(W=z.__i!=-1&&D[z.__i]||O0,z.__i=$,U=L0(Y,z,W,K,Q,X,q,B,J,H),V=z.__e,z.ref&&W.ref!=z.ref&&(W.ref&&b0(W.ref,null,z),H.push(z.ref,z.__c||V,z)),F==null&&V!=null&&(F=V),4&z.__u?(B=h0(z,B,Y),W.__e&&(W.__e=null)):typeof z.type=="function"&&U!==void 0?B=U:V&&(B=V.nextSibling),z.__u&=-7);return Z.__e=F,B}function N1(Y,O,Z,G,K){var Q,X,q,B,J,H=Z.length,$=H,W=0;for(Y.__k=Array(K),Q=0;Q<K;Q++)(X=O[Q])!=null&&typeof X!="boolean"&&typeof X!="function"?(typeof X=="string"||typeof X=="number"||typeof X=="bigint"||X.constructor==String?X=Y.__k[Q]=n(null,X,null,null,null):Q0(X)?X=Y.__k[Q]=n(X0,{children:X},null,null,null):X.constructor===void 0&&X.__b>0?X=Y.__k[Q]=n(X.type,X.props,X.key,X.ref?X.ref:null,X.__v):Y.__k[Q]=X,B=Q+W,X.__=Y,X.__b=Y.__b+1,q=null,(J=X.__i=V1(X,Z,B,$))!=-1&&($--,(q=Z[J])&&(q.__u|=2)),q==null||q.__v==null?(J==-1&&(K>H?W--:K<H&&W++),typeof X.type!="function"&&(X.__u|=4)):J!=B&&(J==B-1?W--:J==B+1?W++:(J>B?W--:W++,X.__u|=4))):Y.__k[Q]=null;if($)for(Q=0;Q<H;Q++)(q=Z[Q])!=null&&(2&q.__u)==0&&(q.__e==G&&(G=g(q)),p0(q,q));return G}function h0(Y,O,Z){var G,K;if(typeof Y.type=="function"){for(G=Y.__k,K=0;G&&K<G.length;K++)G[K]&&(G[K].__=Y,O=h0(G[K],O,Z));return O}Y.__e!=O&&(O&&Y.type&&!O.parentNode&&(O=g(Y)),O=Z.insertBefore(Y.__e,O||null));do O=O&&O.nextSibling;while(O!=null&&O.nodeType==8);return O}function V1(Y,O,Z,G){var K,Q,X,q=Y.key,B=Y.type,J=O[Z],H=J!=null&&(2&J.__u)==0;if(J===null&&q==null||H&&q==J.key&&B==J.type)return Z;if(G>(H?1:0)){for(K=Z-1,Q=Z+1;K>=0||Q<O.length;)if((J=O[X=K>=0?K--:Q++])!=null&&(2&J.__u)==0&&q==J.key&&B==J.type)return X}return-1}function y0(Y,O,Z){O[0]=="-"?Y.setProperty(O,Z==null?"":Z):Y[O]=Z==null?"":typeof Z!="number"||z1.test(O)?Z:Z+"px"}function e(Y,O,Z,G,K){var Q,X;O:if(O=="style")if(typeof Z=="string")Y.style.cssText=Z;else{if(typeof G=="string"&&(Y.style.cssText=G=""),G)for(O in G)Z&&O in Z||y0(Y.style,O,"");if(Z)for(O in Z)G&&Z[O]==G[O]||y0(Y.style,O,Z[O])}else if(O[0]=="o"&&O[1]=="n")Q=O!=(O=O.replace(v0,"$1")),X=O.toLowerCase(),O=X in Y||O=="onFocusOut"||O=="onFocusIn"?X.slice(2):O.slice(2),Y.l||(Y.l={}),Y.l[O+Q]=Z,Z?G?Z[i]=G[i]:(Z[i]=$0,Y.addEventListener(O,Q?V0:N0,Q)):Y.removeEventListener(O,Q?V0:N0,Q);else{if(K=="http://www.w3.org/2000/svg")O=O.replace(/xlink(H|:h)/,"h").replace(/sName$/,"s");else if(O!="width"&&O!="height"&&O!="href"&&O!="list"&&O!="form"&&O!="tabIndex"&&O!="download"&&O!="rowSpan"&&O!="colSpan"&&O!="role"&&O!="popover"&&O in Y)try{Y[O]=Z==null?"":Z;break O}catch(q){}typeof Z=="function"||(Z==null||Z===!1&&O[4]!="-"?Y.removeAttribute(O):Y.setAttribute(O,O=="popover"&&Z==1?"":Z))}}function A0(Y){return function(O){if(this.l){var Z=this.l[O.type+Y];if(O[t]==null)O[t]=$0++;else if(O[t]<Z[i])return;return Z(L.event?L.event(O):O)}}}function L0(Y,O,Z,G,K,Q,X,q,B,J){var H,$,W,z,V,F,U,D,j,C,f,A,h,u,S,d,w=O.type;if(O.constructor!==void 0)return null;128&Z.__u&&(B=!!(32&Z.__u),Q=[q=O.__e=Z.__e]),(H=L.__b)&&H(O);O:if(typeof w=="function"){$=X.length;try{if(j=O.props,C=w.prototype&&w.prototype.render,f=(H=w.contextType)&&G[H.__c],A=H?f?f.props.value:H.__:G,Z.__c?D=(W=O.__c=Z.__c).__=W.__E:(C?O.__c=W=new w(j,A):(O.__c=W=new p(j,A),W.constructor=w,W.render=j1),f&&f.sub(W),W.state||(W.state={}),W.__n=G,z=W.__d=!0,W.__h=[],W._sb=[]),C&&W.__s==null&&(W.__s=W.state),C&&w.getDerivedStateFromProps!=null&&(W.__s==W.state&&(W.__s=x({},W.__s)),x(W.__s,w.getDerivedStateFromProps(j,W.__s))),V=W.props,F=W.state,W.__v=O,z)C&&w.getDerivedStateFromProps==null&&W.componentWillMount!=null&&W.componentWillMount(),C&&W.componentDidMount!=null&&W.__h.push(W.componentDidMount);else{if(C&&w.getDerivedStateFromProps==null&&j!==V&&W.componentWillReceiveProps!=null&&W.componentWillReceiveProps(j,A),O.__v==Z.__v||!W.__e&&W.shouldComponentUpdate!=null&&W.shouldComponentUpdate(j,W.__s,A)===!1){O.__v!=Z.__v&&(W.props=j,W.state=W.__s,W.__d=!1),O.__e=Z.__e,O.__k=Z.__k,O.__k.some(function(v){v&&(v.__=O)}),Y0.push.apply(W.__h,W._sb),W._sb=[],W.__h.length&&X.push(W),q=g(Z);break O}W.componentWillUpdate!=null&&W.componentWillUpdate(j,W.__s,A),C&&W.componentDidUpdate!=null&&W.__h.push(function(){W.componentDidUpdate(V,F,U)})}if(W.context=A,W.props=j,W.__P=Y,W.__e=!1,h=L.__r,u=0,C)W.state=W.__s,W.__d=!1,h&&h(O),H=W.render(W.props,W.state,W.context),Y0.push.apply(W.__h,W._sb),W._sb=[];else do W.__d=!1,h&&h(O),H=W.render(W.props,W.state,W.context),W.state=W.__s;while(W.__d&&++u<25);W.state=W.__s,W.getChildContext!=null&&(G=x(x({},G),W.getChildContext())),C&&!z&&W.getSnapshotBeforeUpdate!=null&&(U=W.getSnapshotBeforeUpdate(V,F)),S=H!=null&&H.type===X0&&H.key==null?c0(H.props.children):H,q=f0(Y,Q0(S)?S:[S],O,Z,G,K,Q,X,q,B,J),W.base=O.__e,O.__u&=-161,W.__h.length&&X.push(W),D&&(W.__E=W.__=null)}catch(v){if(X.length=$,O.__v=null,B||Q!=null){if(v.then){for(O.__u|=B?160:128;q&&q.nodeType==8&&q.nextSibling;)q=q.nextSibling;Q!=null&&(Q[Q.indexOf(q)]=null),O.__e=q}else if(Q!=null)for(d=Q.length;d--;)j0(Q[d])}else O.__e=Z.__e;O.__k==null&&(O.__k=Z.__k||[]),v.then||g0(O),L.__e(v,O,Z)}}else Q==null&&O.__v==Z.__v?(O.__k=Z.__k,O.__e=Z.__e):q=O.__e=$1(Z.__e,O,Z,G,K,Q,X,B,J);return(H=L.diffed)&&H(O),128&O.__u?void 0:q}function g0(Y){Y&&(Y.__c&&(Y.__c.__e=!0),Y.__k&&Y.__k.some(g0))}function d0(Y,O,Z){for(var G=0;G<Z.length;G++)b0(Z[G],Z[++G],Z[++G]);L.__c&&L.__c(O,Y),Y.some(function(K){try{Y=K.__h,K.__h=[],Y.some(function(Q){Q.call(K)})}catch(Q){L.__e(Q,K.__v)}})}function c0(Y){return typeof Y!="object"||Y==null||Y.__b>0?Y:Q0(Y)?Y.map(c0):Y.constructor!==void 0?null:x({},Y)}function $1(Y,O,Z,G,K,Q,X,q,B){var J,H,$,W,z,V,F,U=Z.props||O0,D=O.props,j=O.type;if(j=="svg"?K="http://www.w3.org/2000/svg":j=="math"?K="http://www.w3.org/1998/Math/MathML":K||(K="http://www.w3.org/1999/xhtml"),Q!=null){for(J=0;J<Q.length;J++)if((z=Q[J])&&"setAttribute"in z==!!j&&(j?z.localName==j:z.nodeType==3)){Y=z,Q[J]=null;break}}if(Y==null){if(j==null)return document.createTextNode(D);Y=document.createElementNS(K,j,D.is&&D),q&&(L.__m&&L.__m(O,Q),q=!1),Q=null}if(j==null)U===D||q&&Y.data==D||(Y.data=D);else{if(Q=j=="textarea"&&D.defaultValue!=null?null:Q&&G0.call(Y.childNodes),!q&&Q!=null)for(U={},J=0;J<Y.attributes.length;J++)U[(z=Y.attributes[J]).name]=z.value;for(J in U)z=U[J],J=="dangerouslySetInnerHTML"?$=z:J=="children"||(J in D)||J=="value"&&("defaultValue"in D)||J=="checked"&&("defaultChecked"in D)||e(Y,J,null,z,K);for(J in D)z=D[J],J=="children"?W=z:J=="dangerouslySetInnerHTML"?H=z:J=="value"?V=z:J=="checked"?F=z:q&&typeof z!="function"||U[J]===z||e(Y,J,z,U[J],K);if(H)q||$&&(H.__html==$.__html||H.__html==Y.innerHTML)||(Y.innerHTML=H.__html),O.__k=[];else if($&&(Y.innerHTML=""),f0(O.type=="template"?Y.content:Y,Q0(W)?W:[W],O,Z,G,j=="foreignObject"?"http://www.w3.org/1999/xhtml":K,Q,X,Q?Q[0]:Z.__k&&g(Z,0),q,B),Q!=null)for(J=Q.length;J--;)j0(Q[J]);q&&j!="textarea"||(J="value",j=="progress"&&V==null?Y.removeAttribute("value"):V!=null&&(V!==Y[J]||j=="progress"&&!V||j=="option"&&V!=U[J])&&e(Y,J,V,U[J],K),J="checked",F!=null&&F!=Y[J]&&e(Y,J,F,U[J],K))}return Y}function b0(Y,O,Z){try{if(typeof Y=="function"){var G=typeof Y.__u=="function";G&&Y.__u(),G&&O==null||(Y.__u=Y(O))}else Y.current=O}catch(K){L.__e(K,Z)}}function p0(Y,O,Z){var G,K;if(L.unmount&&L.unmount(Y),(G=Y.ref)&&(G.current&&G.current!=Y.__e||b0(G,null,O)),(G=Y.__c)!=null){if(G.componentWillUnmount)try{G.componentWillUnmount()}catch(Q){L.__e(Q,O)}G.base=G.__P=G.__n=null}if(G=Y.__k)for(K=0;K<G.length;K++)G[K]&&p0(G[K],O,Z||typeof Y.type!="function");Z||j0(Y.__e),Y.__c=Y.__=Y.__e=void 0}function j1(Y,O,Z){return this.constructor(Y,Z)}function K0(Y,O,Z){var G,K,Q,X;O==document&&(O=document.documentElement),L.__&&L.__(Y,O),K=(G=typeof Z=="function")?null:Z&&Z.__k||O.__k,Q=[],X=[],L0(O,Y=(!G&&Z||O).__k=W0(X0,null,[Y]),K||O0,O0,O.namespaceURI,!G&&Z?[Z]:K?null:O.firstChild?G0.call(O.childNodes):null,Q,!G&&Z?Z:K?K.__e:O.firstChild,G,X),d0(Q,Y,X),Y.props.children=null}G0=Y0.slice,L={__e:function(Y,O,Z,G){for(var K,Q,X;O=O.__;)if((K=O.__c)&&!K.__)try{if((Q=K.constructor)&&Q.getDerivedStateFromError!=null&&(K.setState(Q.getDerivedStateFromError(Y)),X=K.__d),K.componentDidCatch!=null&&(K.componentDidCatch(Y,G||{}),X=K.__d),X)return K.__E=K}catch(q){Y=q}throw Y}},I0=0,q1=function(Y){return Y!=null&&Y.constructor===void 0},p.prototype.setState=function(Y,O){var Z;Z=this.__s!=null&&this.__s!=this.state?this.__s:this.__s=x({},this.state),typeof Y=="function"&&(Y=Y(x({},Z),this.props)),Y&&x(Z,Y),Y!=null&&this.__v&&(O&&this._sb.push(O),k0(this))},p.prototype.forceUpdate=function(Y){this.__v&&(this.__e=!0,Y&&this.__h.push(Y),k0(this))},p.prototype.render=X0,m=[],x0=typeof Promise=="function"?Promise.prototype.then.bind(Promise.resolve()):setTimeout,S0=function(Y,O){return Y.__v.__b-O.__v.__b},Z0.__r=0,H0=Math.random().toString(8),t="__d"+H0,i="__a"+H0,v0=/(PointerCapture)$|Capture$/i,$0=0,N0=A0(!1),V0=A0(!0),B1=0;var r,P,R0,a0,s=0,t0=[],_=L,o0=_.__b,i0=_.__r,r0=_.diffed,s0=_.__c,l0=_.unmount,u0=_.__;function U0(Y,O){_.__h&&_.__h(P,Y,s||O),s=0;var Z=P.__H||(P.__H={__:[],__h:[]});return Y>=Z.__.length&&Z.__.push({}),Z.__[Y]}function T(Y){return s=1,L1(Y1,Y)}function L1(Y,O,Z){var G=U0(r++,2);if(G.t=Y,!G.__c&&(G.__=[Z?Z(O):Y1(void 0,O),function(q){var B=G.__N?G.__N[0]:G.__[0],J=G.t(B,q);B!==J&&(G.__N=[J,G.__[1]],G.__c.setState({}))}],G.__c=P,!P.__f)){var K=function(q,B,J){if(!G.__c.__H)return!0;var H=!1,$=G.__c.props!==q;if(G.__c.__H.__.some(function(z){if(z.__N){H=!0;var V=z.__[0];z.__=z.__N,z.__N=void 0,V!==z.__[0]&&($=!0)}}),Q){var W=Q.call(this,q,B,J);return H?W||$:W}return!H||$};P.__f=!0;var{shouldComponentUpdate:Q,componentWillUpdate:X}=P;P.componentWillUpdate=function(q,B,J){if(this.__e){var H=Q;Q=void 0,K(q,B,J),Q=H}X&&X.call(this,q,B,J)},P.shouldComponentUpdate=K}return G.__N||G.__}function l(Y,O){var Z=U0(r++,3);!_.__s&&O1(Z.__H,O)&&(Z.__=Y,Z.u=O,P.__H.__h.push(Z))}function D0(Y){return s=5,n0(function(){return{current:Y}},[])}function n0(Y,O){var Z=U0(r++,7);return O1(Z.__H,O)&&(Z.__=Y(),Z.__H=O,Z.__h=Y),Z.__}function P0(Y,O){return s=8,n0(function(){return Y},O)}function b1(){for(var Y;Y=t0.shift();){var O=Y.__H;if(Y.__P&&O)try{O.__h.some(J0),O.__h.some(T0),O.__h=[]}catch(Z){O.__h=[],_.__e(Z,Y.__v)}}}_.__b=function(Y){P=null,o0&&o0(Y)},_.__=function(Y,O){Y&&O.__k&&O.__k.__m&&(Y.__m=O.__k.__m),u0&&u0(Y,O)},_.__r=function(Y){i0&&i0(Y),r=0;var O=(P=Y.__c).__H;O&&(R0===P?(O.__h=[],P.__h=[],O.__.some(function(Z){Z.__N&&(Z.__=Z.__N),Z.u=Z.__N=void 0})):(O.__h.some(J0),O.__h.some(T0),O.__h=[],r=0)),R0=P},_.diffed=function(Y){r0&&r0(Y);var O=Y.__c;O&&O.__H&&(O.__H.__h.length&&(t0.push(O)!==1&&a0===_.requestAnimationFrame||((a0=_.requestAnimationFrame)||R1)(b1)),O.__H.__.some(function(Z){Z.u&&(Z.__H=Z.u,Z.u=void 0)})),R0=P=null},_.__c=function(Y,O){O.some(function(Z){try{Z.__h.some(J0),Z.__h=Z.__h.filter(function(G){return!G.__||T0(G)})}catch(G){O.some(function(K){K.__h&&(K.__h=[])}),O=[],_.__e(G,Z.__v)}}),s0&&s0(Y,O)},_.unmount=function(Y){l0&&l0(Y);var O,Z=Y.__c;Z&&Z.__H&&(Z.__H.__.some(function(G){try{J0(G)}catch(K){O=K}}),Z.__H=void 0,O&&_.__e(O,Z.__v))};var e0=typeof requestAnimationFrame=="function";function R1(Y){var O,Z=function(){clearTimeout(G),e0&&cancelAnimationFrame(O),setTimeout(Y)},G=setTimeout(Z,35);e0&&(O=requestAnimationFrame(Z))}function J0(Y){var O=P,Z=Y.__c;typeof Z=="function"&&(Y.__c=void 0,Z()),P=O}function T0(Y){var O=P;Y.__c=Y.__(),P=O}function O1(Y,O){return!Y||Y.length!==O.length||O.some(function(Z,G){return Z!==Y[G]})}function Y1(Y,O){return typeof O=="function"?O(Y):O}var G1=function(Y,O,Z,G){var K;O[0]=0;for(var Q=1;Q<O.length;Q++){var X=O[Q++],q=O[Q]?(O[0]|=X?1:2,Z[O[Q++]]):O[++Q];X===3?G[0]=q:X===4?G[1]=Object.assign(G[1]||{},q):X===5?(G[1]=G[1]||{})[O[++Q]]=q:X===6?G[1][O[++Q]]+=q+"":X?(K=Y.apply(q,G1(Y,q,Z,["",null])),G.push(K),q[0]?O[0]|=2:(O[Q-2]=0,O[Q]=K)):G.push(q)}return G},Z1=new Map;function _0(Y){var O=Z1.get(this);return O||(O=new Map,Z1.set(this,O)),(O=G1(this,O.get(Y)||(O.set(Y,O=function(Z){for(var G,K,Q=1,X="",q="",B=[0],J=function(W){Q===1&&(W||(X=X.replace(/^\s*\n\s*|\s*\n\s*$/g,"")))?B.push(0,W,X):Q===3&&(W||X)?(B.push(3,W,X),Q=2):Q===2&&X==="..."&&W?B.push(4,W,0):Q===2&&X&&!W?B.push(5,0,!0,X):Q>=5&&((X||!W&&Q===5)&&(B.push(Q,0,X,K),Q=6),W&&(B.push(Q,W,0,K),Q=6)),X=""},H=0;H<Z.length;H++){H&&(Q===1&&J(),J(H));for(var $=0;$<Z[H].length;$++)G=Z[H][$],Q===1?G==="<"?(J(),B=[B],Q=3):X+=G:Q===4?X==="--"&&G===">"?(Q=1,X=""):X=G+X[0]:q?G===q?q="":X+=G:G==='"'||G==="'"?q=G:G===">"?(J(),Q=1):Q&&(G==="="?(Q=5,K=X,X=""):G==="/"&&(Q<5||Z[H][$+1]===">")?(J(),Q===3&&(B=B[0]),Q=B,(B=B[0]).push(2,0,Q),Q=0):G===" "||G==="\t"||G===`
-`||G==="\r"?(J(),Q=2):X+=G),Q===3&&X==="!--"&&(Q=4,B=B[0])}return J(),B}(Y)),O),arguments,[])).length>1?O:O[0]}var b=_0.bind(W0);async function k(Y,O){let Z=await fetch(`/api${Y}`,{credentials:"same-origin",headers:{"Content-Type":"application/json",...O?.headers??{}},...O});if(!Z.ok){let G=await Z.json().catch(()=>({error:Z.statusText}));throw Error(G.error||`HTTP ${Z.status}`)}return Z.json()}function T1(){let[Y,O]=T([]),[Z,G]=T(null),[K,Q]=T("list"),[X,q]=T(null),[B,J]=T(!0),H=P0(async()=>{try{let W=await k("/agents");O(W.agents||[])}catch(W){console.error("Failed to load agents:",W)}},[]);l(()=>{(async()=>{try{let W=await k("/auth/me");q(W.user)}catch{}await H(),J(!1)})()},[]);let $=(W)=>({style:{...W?Object.fromEntries(W.split(";").filter(Boolean).map((z)=>{let[V,F]=z.trim().split(":");return[V.replace(/-([a-z])/g,(U,D)=>D.toUpperCase()),F.trim()]})):{}}});if(B)return b`<div style=${{padding:"2rem",color:"var(--text-dim)"}}>Loading…</div>`;return b`
+var W0,T,j0,z1,g,y0,S0,v0,B0,n,s,b0,J0,V0,L0,H1,Z0={},O0=[],N1=/acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i,X0=Array.isArray;function m(Z,Y){for(var O in Y)Z[O]=Y[O];return Z}function R0(Z){Z&&Z.parentNode&&Z.parentNode.removeChild(Z)}function G0(Z,Y,O){var W,K,Q,G={};for(Q in Y)Q=="key"?W=Y[Q]:Q=="ref"?K=Y[Q]:G[Q]=Y[Q];if(arguments.length>2&&(G.children=arguments.length>3?W0.call(arguments,2):O),typeof Z=="function"&&Z.defaultProps!=null)for(Q in Z.defaultProps)G[Q]===void 0&&(G[Q]=Z.defaultProps[Q]);return Y0(Z,G,W,K,null)}function Y0(Z,Y,O,W,K){var Q={type:Z,props:Y,key:O,ref:W,__k:null,__:null,__b:0,__e:null,__c:null,constructor:void 0,__v:K==null?++j0:K,__i:-1,__u:0};return K==null&&T.vnode!=null&&T.vnode(Q),Q}function K0(Z){return Z.children}function o(Z,Y){this.props=Z,this.context=Y}function d(Z,Y){if(Y==null)return Z.__?d(Z.__,Z.__i+1):null;for(var O;Y<Z.__k.length;Y++)if((O=Z.__k[Y])!=null&&O.__e!=null)return O.__e;return typeof Z.type=="function"?d(Z):null}function $1(Z){if(Z.__P&&Z.__d){var Y=Z.__v,O=Y.__e,W=[],K=[],Q=m({},Y);Q.__v=Y.__v+1,T.vnode&&T.vnode(Q),D0(Z.__P,Q,Y,Z.__n,Z.__P.namespaceURI,32&Y.__u?[O]:null,W,O==null?d(Y):O,!!(32&Y.__u),K),Q.__v=Y.__v,Q.__.__k[Q.__i]=Q,d0(W,Q,K),Y.__e=Y.__=null,Q.__e!=O&&f0(Q)}}function f0(Z){if((Z=Z.__)!=null&&Z.__c!=null)return Z.__e=Z.__c.base=null,Z.__k.some(function(Y){if(Y!=null&&Y.__e!=null)return Z.__e=Z.__c.base=Y.__e}),f0(Z)}function A0(Z){(!Z.__d&&(Z.__d=!0)&&g.push(Z)&&!Q0.__r++||y0!=T.debounceRendering)&&((y0=T.debounceRendering)||S0)(Q0)}function Q0(){try{for(var Z,Y=1;g.length;)g.length>Y&&g.sort(v0),Z=g.shift(),Y=g.length,$1(Z)}finally{g.length=Q0.__r=0}}function m0(Z,Y,O,W,K,Q,G,z,H,q,$){var J,X,N,V,C,U,F=W&&W.__k||O0,D=Y.length;for(H=B1(O,Y,F,H,D),J=0;J<D;J++)(N=O.__k[J])!=null&&(X=N.__i!=-1&&F[N.__i]||Z0,N.__i=J,U=D0(Z,N,X,K,Q,G,z,H,q,$),V=N.__e,N.ref&&X.ref!=N.ref&&(X.ref&&P0(X.ref,null,N),$.push(N.ref,N.__c||V,N)),C==null&&V!=null&&(C=V),4&N.__u?(H=h0(N,H,Z),X.__e&&(X.__e=null)):typeof N.type=="function"&&U!==void 0?H=U:V&&(H=V.nextSibling),N.__u&=-7);return O.__e=C,H}function B1(Z,Y,O,W,K){var Q,G,z,H,q,$=O.length,J=$,X=0;for(Z.__k=Array(K),Q=0;Q<K;Q++)(G=Y[Q])!=null&&typeof G!="boolean"&&typeof G!="function"?(typeof G=="string"||typeof G=="number"||typeof G=="bigint"||G.constructor==String?G=Z.__k[Q]=Y0(null,G,null,null,null):X0(G)?G=Z.__k[Q]=Y0(K0,{children:G},null,null,null):G.constructor===void 0&&G.__b>0?G=Z.__k[Q]=Y0(G.type,G.props,G.key,G.ref?G.ref:null,G.__v):Z.__k[Q]=G,H=Q+X,G.__=Z,G.__b=Z.__b+1,z=null,(q=G.__i=V1(G,O,H,J))!=-1&&(J--,(z=O[q])&&(z.__u|=2)),z==null||z.__v==null?(q==-1&&(K>$?X--:K<$&&X++),typeof G.type!="function"&&(G.__u|=4)):q!=H&&(q==H-1?X--:q==H+1?X++:(q>H?X--:X++,G.__u|=4))):Z.__k[Q]=null;if(J)for(Q=0;Q<$;Q++)(z=O[Q])!=null&&(2&z.__u)==0&&(z.__e==W&&(W=d(z)),p0(z,z));return W}function h0(Z,Y,O){var W,K;if(typeof Z.type=="function"){for(W=Z.__k,K=0;W&&K<W.length;K++)W[K]&&(W[K].__=Z,Y=h0(W[K],Y,O));return Y}Z.__e!=Y&&(Y&&Z.type&&!Y.parentNode&&(Y=d(Z)),Y=O.insertBefore(Z.__e,Y||null));do Y=Y&&Y.nextSibling;while(Y!=null&&Y.nodeType==8);return Y}function V1(Z,Y,O,W){var K,Q,G,z=Z.key,H=Z.type,q=Y[O],$=q!=null&&(2&q.__u)==0;if(q===null&&z==null||$&&z==q.key&&H==q.type)return O;if(W>($?1:0)){for(K=O-1,Q=O+1;K>=0||Q<Y.length;)if((q=Y[G=K>=0?K--:Q++])!=null&&(2&q.__u)==0&&z==q.key&&H==q.type)return G}return-1}function x0(Z,Y,O){Y[0]=="-"?Z.setProperty(Y,O==null?"":O):Z[Y]=O==null?"":typeof O!="number"||N1.test(Y)?O:O+"px"}function t(Z,Y,O,W,K){var Q,G;Y:if(Y=="style")if(typeof O=="string")Z.style.cssText=O;else{if(typeof W=="string"&&(Z.style.cssText=W=""),W)for(Y in W)O&&Y in O||x0(Z.style,Y,"");if(O)for(Y in O)W&&O[Y]==W[Y]||x0(Z.style,Y,O[Y])}else if(Y[0]=="o"&&Y[1]=="n")Q=Y!=(Y=Y.replace(b0,"$1")),G=Y.toLowerCase(),Y=G in Z||Y=="onFocusOut"||Y=="onFocusIn"?G.slice(2):Y.slice(2),Z.l||(Z.l={}),Z.l[Y+Q]=O,O?W?O[s]=W[s]:(O[s]=J0,Z.addEventListener(Y,Q?L0:V0,Q)):Z.removeEventListener(Y,Q?L0:V0,Q);else{if(K=="http://www.w3.org/2000/svg")Y=Y.replace(/xlink(H|:h)/,"h").replace(/sName$/,"s");else if(Y!="width"&&Y!="height"&&Y!="href"&&Y!="list"&&Y!="form"&&Y!="tabIndex"&&Y!="download"&&Y!="rowSpan"&&Y!="colSpan"&&Y!="role"&&Y!="popover"&&Y in Z)try{Z[Y]=O==null?"":O;break Y}catch(z){}typeof O=="function"||(O==null||O===!1&&Y[4]!="-"?Z.removeAttribute(Y):Z.setAttribute(Y,Y=="popover"&&O==1?"":O))}}function I0(Z){return function(Y){if(this.l){var O=this.l[Y.type+Z];if(Y[n]==null)Y[n]=J0++;else if(Y[n]<O[s])return;return O(T.event?T.event(Y):Y)}}}function D0(Z,Y,O,W,K,Q,G,z,H,q){var $,J,X,N,V,C,U,F,D,k,S,v,B,A,j,a,y=Y.type;if(Y.constructor!==void 0)return null;128&O.__u&&(H=!!(32&O.__u),Q=[z=Y.__e=O.__e]),($=T.__b)&&$(Y);Y:if(typeof y=="function"){J=G.length;try{if(D=Y.props,k=y.prototype&&y.prototype.render,S=($=y.contextType)&&W[$.__c],v=$?S?S.props.value:$.__:W,O.__c?F=(X=Y.__c=O.__c).__=X.__E:(k?Y.__c=X=new y(D,v):(Y.__c=X=new o(D,v),X.constructor=y,X.render=J1),S&&S.sub(X),X.state||(X.state={}),X.__n=W,N=X.__d=!0,X.__h=[],X._sb=[]),k&&X.__s==null&&(X.__s=X.state),k&&y.getDerivedStateFromProps!=null&&(X.__s==X.state&&(X.__s=m({},X.__s)),m(X.__s,y.getDerivedStateFromProps(D,X.__s))),V=X.props,C=X.state,X.__v=Y,N)k&&y.getDerivedStateFromProps==null&&X.componentWillMount!=null&&X.componentWillMount(),k&&X.componentDidMount!=null&&X.__h.push(X.componentDidMount);else{if(k&&y.getDerivedStateFromProps==null&&D!==V&&X.componentWillReceiveProps!=null&&X.componentWillReceiveProps(D,v),Y.__v==O.__v||!X.__e&&X.shouldComponentUpdate!=null&&X.shouldComponentUpdate(D,X.__s,v)===!1){Y.__v!=O.__v&&(X.props=D,X.state=X.__s,X.__d=!1),Y.__e=O.__e,Y.__k=O.__k,Y.__k.some(function(h){h&&(h.__=Y)}),O0.push.apply(X.__h,X._sb),X._sb=[],X.__h.length&&G.push(X),z=d(O);break Y}X.componentWillUpdate!=null&&X.componentWillUpdate(D,X.__s,v),k&&X.componentDidUpdate!=null&&X.__h.push(function(){X.componentDidUpdate(V,C,U)})}if(X.context=v,X.props=D,X.__P=Z,X.__e=!1,B=T.__r,A=0,k)X.state=X.__s,X.__d=!1,B&&B(Y),$=X.render(X.props,X.state,X.context),O0.push.apply(X.__h,X._sb),X._sb=[];else do X.__d=!1,B&&B(Y),$=X.render(X.props,X.state,X.context),X.state=X.__s;while(X.__d&&++A<25);X.state=X.__s,X.getChildContext!=null&&(W=m(m({},W),X.getChildContext())),k&&!N&&X.getSnapshotBeforeUpdate!=null&&(U=X.getSnapshotBeforeUpdate(V,C)),j=$!=null&&$.type===K0&&$.key==null?c0($.props.children):$,z=m0(Z,X0(j)?j:[j],Y,O,W,K,Q,G,z,H,q),X.base=Y.__e,Y.__u&=-161,X.__h.length&&G.push(X),F&&(X.__E=X.__=null)}catch(h){if(G.length=J,Y.__v=null,H||Q!=null){if(h.then){for(Y.__u|=H?160:128;z&&z.nodeType==8&&z.nextSibling;)z=z.nextSibling;Q!=null&&(Q[Q.indexOf(z)]=null),Y.__e=z}else if(Q!=null)for(a=Q.length;a--;)R0(Q[a])}else Y.__e=O.__e;Y.__k==null&&(Y.__k=O.__k||[]),h.then||g0(Y),T.__e(h,Y,O)}}else Q==null&&Y.__v==O.__v?(Y.__k=O.__k,Y.__e=O.__e):z=Y.__e=L1(O.__e,Y,O,W,K,Q,G,H,q);return($=T.diffed)&&$(Y),128&Y.__u?void 0:z}function g0(Z){Z&&(Z.__c&&(Z.__c.__e=!0),Z.__k&&Z.__k.some(g0))}function d0(Z,Y,O){for(var W=0;W<O.length;W++)P0(O[W],O[++W],O[++W]);T.__c&&T.__c(Y,Z),Z.some(function(K){try{Z=K.__h,K.__h=[],Z.some(function(Q){Q.call(K)})}catch(Q){T.__e(Q,K.__v)}})}function c0(Z){return typeof Z!="object"||Z==null||Z.__b>0?Z:X0(Z)?Z.map(c0):Z.constructor!==void 0?null:m({},Z)}function L1(Z,Y,O,W,K,Q,G,z,H){var q,$,J,X,N,V,C,U=O.props||Z0,F=Y.props,D=Y.type;if(D=="svg"?K="http://www.w3.org/2000/svg":D=="math"?K="http://www.w3.org/1998/Math/MathML":K||(K="http://www.w3.org/1999/xhtml"),Q!=null){for(q=0;q<Q.length;q++)if((N=Q[q])&&"setAttribute"in N==!!D&&(D?N.localName==D:N.nodeType==3)){Z=N,Q[q]=null;break}}if(Z==null){if(D==null)return document.createTextNode(F);Z=document.createElementNS(K,D,F.is&&F),z&&(T.__m&&T.__m(Y,Q),z=!1),Q=null}if(D==null)U===F||z&&Z.data==F||(Z.data=F);else{if(Q=D=="textarea"&&F.defaultValue!=null?null:Q&&W0.call(Z.childNodes),!z&&Q!=null)for(U={},q=0;q<Z.attributes.length;q++)U[(N=Z.attributes[q]).name]=N.value;for(q in U)N=U[q],q=="dangerouslySetInnerHTML"?J=N:q=="children"||(q in F)||q=="value"&&("defaultValue"in F)||q=="checked"&&("defaultChecked"in F)||t(Z,q,null,N,K);for(q in F)N=F[q],q=="children"?X=N:q=="dangerouslySetInnerHTML"?$=N:q=="value"?V=N:q=="checked"?C=N:z&&typeof N!="function"||U[q]===N||t(Z,q,N,U[q],K);if($)z||J&&($.__html==J.__html||$.__html==Z.innerHTML)||(Z.innerHTML=$.__html),Y.__k=[];else if(J&&(Z.innerHTML=""),m0(Y.type=="template"?Z.content:Z,X0(X)?X:[X],Y,O,W,D=="foreignObject"?"http://www.w3.org/1999/xhtml":K,Q,G,Q?Q[0]:O.__k&&d(O,0),z,H),Q!=null)for(q=Q.length;q--;)R0(Q[q]);z&&D!="textarea"||(q="value",D=="progress"&&V==null?Z.removeAttribute("value"):V!=null&&(V!==Z[q]||D=="progress"&&!V||D=="option"&&V!=U[q])&&t(Z,q,V,U[q],K),q="checked",C!=null&&C!=Z[q]&&t(Z,q,C,U[q],K))}return Z}function P0(Z,Y,O){try{if(typeof Z=="function"){var W=typeof Z.__u=="function";W&&Z.__u(),W&&Y==null||(Z.__u=Z(Y))}else Z.current=Y}catch(K){T.__e(K,O)}}function p0(Z,Y,O){var W,K;if(T.unmount&&T.unmount(Z),(W=Z.ref)&&(W.current&&W.current!=Z.__e||P0(W,null,Y)),(W=Z.__c)!=null){if(W.componentWillUnmount)try{W.componentWillUnmount()}catch(Q){T.__e(Q,Y)}W.base=W.__P=W.__n=null}if(W=Z.__k)for(K=0;K<W.length;K++)W[K]&&p0(W[K],Y,O||typeof Z.type!="function");O||R0(Z.__e),Z.__c=Z.__=Z.__e=void 0}function J1(Z,Y,O){return this.constructor(Z,O)}function q0(Z,Y,O){var W,K,Q,G;Y==document&&(Y=document.documentElement),T.__&&T.__(Z,Y),K=(W=typeof O=="function")?null:O&&O.__k||Y.__k,Q=[],G=[],D0(Y,Z=(!W&&O||Y).__k=G0(K0,null,[Z]),K||Z0,Z0,Y.namespaceURI,!W&&O?[O]:K?null:Y.firstChild?W0.call(Y.childNodes):null,Q,!W&&O?O:K?K.__e:Y.firstChild,W,G),d0(Q,Z,G),Z.props.children=null}W0=O0.slice,T={__e:function(Z,Y,O,W){for(var K,Q,G;Y=Y.__;)if((K=Y.__c)&&!K.__)try{if((Q=K.constructor)&&Q.getDerivedStateFromError!=null&&(K.setState(Q.getDerivedStateFromError(Z)),G=K.__d),K.componentDidCatch!=null&&(K.componentDidCatch(Z,W||{}),G=K.__d),G)return K.__E=K}catch(z){Z=z}throw Z}},j0=0,z1=function(Z){return Z!=null&&Z.constructor===void 0},o.prototype.setState=function(Z,Y){var O;O=this.__s!=null&&this.__s!=this.state?this.__s:this.__s=m({},this.state),typeof Z=="function"&&(Z=Z(m({},O),this.props)),Z&&m(O,Z),Z!=null&&this.__v&&(Y&&this._sb.push(Y),A0(this))},o.prototype.forceUpdate=function(Z){this.__v&&(this.__e=!0,Z&&this.__h.push(Z),A0(this))},o.prototype.render=K0,g=[],S0=typeof Promise=="function"?Promise.prototype.then.bind(Promise.resolve()):setTimeout,v0=function(Z,Y){return Z.__v.__b-Y.__v.__b},Q0.__r=0,B0=Math.random().toString(8),n="__d"+B0,s="__a"+B0,b0=/(PointerCapture)$|Capture$/i,J0=0,V0=I0(!1),L0=I0(!0),H1=0;var u,M,T0,a0,e=0,t0=[],w=T,i0=w.__b,o0=w.__r,r0=w.diffed,l0=w.__c,s0=w.unmount,u0=w.__;function F0(Z,Y){w.__h&&w.__h(M,Z,e||Y),e=0;var O=M.__H||(M.__H={__:[],__h:[]});return Z>=O.__.length&&O.__.push({}),O.__[Z]}function P(Z){return e=1,R1(Z1,Z)}function R1(Z,Y,O){var W=F0(u++,2);if(W.t=Z,!W.__c&&(W.__=[O?O(Y):Z1(void 0,Y),function(z){var H=W.__N?W.__N[0]:W.__[0],q=W.t(H,z);H!==q&&(W.__N=[q,W.__[1]],W.__c.setState({}))}],W.__c=M,!M.__f)){var K=function(z,H,q){if(!W.__c.__H)return!0;var $=!1,J=W.__c.props!==z;if(W.__c.__H.__.some(function(N){if(N.__N){$=!0;var V=N.__[0];N.__=N.__N,N.__N=void 0,V!==N.__[0]&&(J=!0)}}),Q){var X=Q.call(this,z,H,q);return $?X||J:X}return!$||J};M.__f=!0;var{shouldComponentUpdate:Q,componentWillUpdate:G}=M;M.componentWillUpdate=function(z,H,q){if(this.__e){var $=Q;Q=void 0,K(z,H,q),Q=$}G&&G.call(this,z,H,q)},M.shouldComponentUpdate=K}return W.__N||W.__}function c(Z,Y){var O=F0(u++,3);!w.__s&&Y1(O.__H,Y)&&(O.__=Z,O.u=Y,M.__H.__h.push(O))}function _0(Z){return e=5,n0(function(){return{current:Z}},[])}function n0(Z,Y){var O=F0(u++,7);return Y1(O.__H,Y)&&(O.__=Z(),O.__H=Y,O.__h=Z),O.__}function H0(Z,Y){return e=8,n0(function(){return Z},Y)}function D1(){for(var Z;Z=t0.shift();){var Y=Z.__H;if(Z.__P&&Y)try{Y.__h.some(z0),Y.__h.some(U0),Y.__h=[]}catch(O){Y.__h=[],w.__e(O,Z.__v)}}}w.__b=function(Z){M=null,i0&&i0(Z)},w.__=function(Z,Y){Z&&Y.__k&&Y.__k.__m&&(Z.__m=Y.__k.__m),u0&&u0(Z,Y)},w.__r=function(Z){o0&&o0(Z),u=0;var Y=(M=Z.__c).__H;Y&&(T0===M?(Y.__h=[],M.__h=[],Y.__.some(function(O){O.__N&&(O.__=O.__N),O.u=O.__N=void 0})):(Y.__h.some(z0),Y.__h.some(U0),Y.__h=[],u=0)),T0=M},w.diffed=function(Z){r0&&r0(Z);var Y=Z.__c;Y&&Y.__H&&(Y.__H.__h.length&&(t0.push(Y)!==1&&a0===w.requestAnimationFrame||((a0=w.requestAnimationFrame)||P1)(D1)),Y.__H.__.some(function(O){O.u&&(O.__H=O.u,O.u=void 0)})),T0=M=null},w.__c=function(Z,Y){Y.some(function(O){try{O.__h.some(z0),O.__h=O.__h.filter(function(W){return!W.__||U0(W)})}catch(W){Y.some(function(K){K.__h&&(K.__h=[])}),Y=[],w.__e(W,O.__v)}}),l0&&l0(Z,Y)},w.unmount=function(Z){s0&&s0(Z);var Y,O=Z.__c;O&&O.__H&&(O.__H.__.some(function(W){try{z0(W)}catch(K){Y=K}}),O.__H=void 0,Y&&w.__e(Y,O.__v))};var e0=typeof requestAnimationFrame=="function";function P1(Z){var Y,O=function(){clearTimeout(W),e0&&cancelAnimationFrame(Y),setTimeout(Z)},W=setTimeout(O,35);e0&&(Y=requestAnimationFrame(O))}function z0(Z){var Y=M,O=Z.__c;typeof O=="function"&&(Z.__c=void 0,O()),M=Y}function U0(Z){var Y=M;Z.__c=Z.__(),M=Y}function Y1(Z,Y){return!Z||Z.length!==Y.length||Y.some(function(O,W){return O!==Z[W]})}function Z1(Z,Y){return typeof Y=="function"?Y(Z):Y}var Q1=function(Z,Y,O,W){var K;Y[0]=0;for(var Q=1;Q<Y.length;Q++){var G=Y[Q++],z=Y[Q]?(Y[0]|=G?1:2,O[Y[Q++]]):Y[++Q];G===3?W[0]=z:G===4?W[1]=Object.assign(W[1]||{},z):G===5?(W[1]=W[1]||{})[Y[++Q]]=z:G===6?W[1][Y[++Q]]+=z+"":G?(K=Z.apply(z,Q1(Z,z,O,["",null])),W.push(K),z[0]?Y[0]|=2:(Y[Q-2]=0,Y[Q]=K)):W.push(z)}return W},O1=new Map;function M0(Z){var Y=O1.get(this);return Y||(Y=new Map,O1.set(this,Y)),(Y=Q1(this,Y.get(Z)||(Y.set(Z,Y=function(O){for(var W,K,Q=1,G="",z="",H=[0],q=function(X){Q===1&&(X||(G=G.replace(/^\s*\n\s*|\s*\n\s*$/g,"")))?H.push(0,X,G):Q===3&&(X||G)?(H.push(3,X,G),Q=2):Q===2&&G==="..."&&X?H.push(4,X,0):Q===2&&G&&!X?H.push(5,0,!0,G):Q>=5&&((G||!X&&Q===5)&&(H.push(Q,0,G,K),Q=6),X&&(H.push(Q,X,0,K),Q=6)),G=""},$=0;$<O.length;$++){$&&(Q===1&&q(),q($));for(var J=0;J<O[$].length;J++)W=O[$][J],Q===1?W==="<"?(q(),H=[H],Q=3):G+=W:Q===4?G==="--"&&W===">"?(Q=1,G=""):G=W+G[0]:z?W===z?z="":G+=W:W==='"'||W==="'"?z=W:W===">"?(q(),Q=1):Q&&(W==="="?(Q=5,K=G,G=""):W==="/"&&(Q<5||O[$][J+1]===">")?(q(),Q===3&&(H=H[0]),Q=H,(H=H[0]).push(2,0,Q),Q=0):W===" "||W==="\t"||W===`
+`||W==="\r"?(q(),Q=2):G+=W),Q===3&&G==="!--"&&(Q=4,H=H[0])}return q(),H}(Z)),Y),arguments,[])).length>1?Y:Y[0]}var R=M0.bind(G0);async function E(Z,Y){let O=await fetch(`/api${Z}`,{credentials:"same-origin",headers:{"Content-Type":"application/json",...Y?.headers??{}},...Y});if(!O.ok){let W=await O.json().catch(()=>({error:O.statusText}));throw Error(W.error||`HTTP ${O.status}`)}return O.json()}function T1(){let[Z,Y]=P([]),[O,W]=P(null),[K,Q]=P("list"),[G,z]=P(null),[H,q]=P(!0),$=H0(async()=>{try{let X=await E("/agents");Y(X.agents||[])}catch(X){console.error("Failed to load agents:",X)}},[]);c(()=>{(async()=>{try{let X=await E("/auth/me");z(X.user)}catch{}await $(),q(!1)})()},[]);let J=(X)=>({style:{...X?Object.fromEntries(X.split(";").filter(Boolean).map((N)=>{let[V,C]=N.trim().split(":");return[V.replace(/-([a-z])/g,(U,F)=>F.toUpperCase()),C.trim()]})):{}}});if(H)return R`<div style=${{padding:"2rem",color:"var(--text-dim)"}}>Loading…</div>`;return R`
     <div style=${{display:"flex",height:"100vh",overflow:"hidden"}}>
       ${""}
       <aside style=${{width:"280px",borderRight:"1px solid var(--border)",display:"flex",flexDirection:"column",background:"var(--bg-card)",flexShrink:0}}>
@@ -12,29 +12,35 @@ var G0,L,I0,q1,m,C0,x0,S0,H0,t,i,v0,$0,N0,V0,B1,O0={},Y0=[],z1=/acit|ex(?:s|g|n|
           </p>
         </div>
 
-        <div style=${{padding:"0.75rem"}}>
+        <div style=${{padding:"0.75rem",display:"flex",flexDirection:"column",gap:"0.5rem"}}>
           <button
-            onClick=${()=>{Q("add"),G(null)}}
+            onClick=${()=>{Q("add"),W(null)}}
             style=${{width:"100%",padding:"0.6rem 0.75rem",borderRadius:"var(--radius)",background:"var(--accent)",color:"white",border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}
           >
             + Add Agent
           </button>
+          <button
+            onClick=${()=>{Q("jobs"),W(null)}}
+            style=${{width:"100%",padding:"0.6rem 0.75rem",borderRadius:"var(--radius)",background:K==="jobs"?"var(--bg-hover)":"transparent",border:"1px solid var(--border)",color:"var(--text)",cursor:"pointer",fontWeight:600,fontSize:"0.85rem"}}
+          >
+            🚀 Jobs
+          </button>
         </div>
 
         <div style=${{flex:1,overflowY:"auto",padding:"0 0.75rem"}}>
-          ${Y.map((W)=>b`
+          ${Z.map((X)=>R`
             <button
-              key=${W.id}
-              onClick=${()=>{G(W),Q("chat")}}
-              style=${{width:"100%",textAlign:"left",padding:"0.75rem",marginBottom:"0.25rem",borderRadius:"var(--radius)",border:"1px solid transparent",background:Z?.id===W.id?"var(--bg-hover)":"transparent",color:"var(--text)",cursor:"pointer",display:"flex",alignItems:"center",gap:"0.5rem"}}
+              key=${X.id}
+              onClick=${()=>{W(X),Q("chat")}}
+              style=${{width:"100%",textAlign:"left",padding:"0.75rem",marginBottom:"0.25rem",borderRadius:"var(--radius)",border:"1px solid transparent",background:O?.id===X.id?"var(--bg-hover)":"transparent",color:"var(--text)",cursor:"pointer",display:"flex",alignItems:"center",gap:"0.5rem"}}
             >
-              ${W.icon_url?b`<img src=${W.icon_url} style=${{width:"1.5rem",height:"1.5rem",borderRadius:"50%"}} />`:b`<span style=${{fontSize:"1.25rem"}}>🤖</span>`}
+              ${X.icon_url?R`<img src=${X.icon_url} style=${{width:"1.5rem",height:"1.5rem",borderRadius:"50%"}} />`:R`<span style=${{fontSize:"1.25rem"}}>🤖</span>`}
               <div style=${{flex:1,minWidth:0}}>
                 <div style=${{fontSize:"0.85rem",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                  ${W.name}
+                  ${X.name}
                 </div>
-                <div style=${{fontSize:"0.7rem",marginTop:"0.15rem",color:W.auth_state==="connected"?"var(--success)":"var(--warning)"}}>
-                  ${W.auth_state==="connected"?"● Connected":"○ Needs auth"}
+                <div style=${{fontSize:"0.7rem",marginTop:"0.15rem",color:X.auth_state==="connected"?"var(--success)":"var(--warning)"}}>
+                  ${X.auth_state==="connected"?"● Connected":"○ Needs auth"}
                 </div>
               </div>
             </button>
@@ -42,10 +48,10 @@ var G0,L,I0,q1,m,C0,x0,S0,H0,t,i,v0,$0,N0,V0,B1,O0={},Y0=[],z1=/acit|ex(?:s|g|n|
         </div>
 
         <div style=${{padding:"0.75rem",borderTop:"1px solid var(--border)"}}>
-          ${X?b`<div style=${{fontSize:"0.75rem",color:"var(--text-dim)"}}>
-              Signed in as ${X.name||X.email||X.sub}
+          ${G?R`<div style=${{fontSize:"0.75rem",color:"var(--text-dim)"}}>
+              Signed in as ${G.name||G.email||G.sub}
               <br/><a href="/api/auth/logout" style=${{color:"var(--accent)"}}>Log out</a>
-            </div>`:b`<div style=${{fontSize:"0.75rem",color:"var(--text-dim)"}}>
+            </div>`:R`<div style=${{fontSize:"0.75rem",color:"var(--text-dim)"}}>
               <a href="/api/auth/login" style=${{color:"var(--accent)"}}>Sign in with Pocket ID</a>
             </div>`}
         </div>
@@ -53,12 +59,13 @@ var G0,L,I0,q1,m,C0,x0,S0,H0,t,i,v0,$0,N0,V0,B1,O0={},Y0=[],z1=/acit|ex(?:s|g|n|
 
       ${""}
       <main style=${{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-        ${K==="add"&&b`<${D1} onAdded=${(W)=>{H(),G(W),Q("chat")}} />`}
-        ${K==="chat"&&Z&&b`<${P1} agent=${Z} onRefresh=${H} />`}
-        ${K==="list"&&b`<${U1} />`}
+        ${K==="add"&&R`<${M1} onAdded=${(X)=>{$(),W(X),Q("chat")}} />`}
+        ${K==="chat"&&O&&R`<${w1} agent=${O} onRefresh=${$} />`}
+        ${K==="jobs"&&R`<${_1} agents=${Z} />`}
+        ${K==="list"&&R`<${U1} />`}
       </main>
     </div>
-  `}function U1(){return b`
+  `}function U1(){return R`
     <div style=${{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",color:"var(--text-dim)"}}>
       <div style=${{fontSize:"3rem",marginBottom:"1rem"}}>🎵</div>
       <p style=${{fontSize:"1rem"}}>Select an agent or add a new one to get started</p>
@@ -66,7 +73,101 @@ var G0,L,I0,q1,m,C0,x0,S0,H0,t,i,v0,$0,N0,V0,B1,O0={},Y0=[],z1=/acit|ex(?:s|g|n|
         Orchestral connects to A2A agents via OIDC and lets you message them
       </p>
     </div>
-  `}function D1({onAdded:Y}){let[O,Z]=T(""),[G,K]=T(""),[Q,X]=T(""),[q,B]=T(""),[J,H]=T(!1),[$,W]=T(null);async function z(){B(""),W(null),H(!0);try{let V=await k("/agents",{method:"POST",body:JSON.stringify({card_url:O,oidc_client_id:G,oidc_client_secret:Q})});Y(V.agent)}catch(V){B(V.message)}finally{H(!1)}}return b`
+  `}var F1={queued:"Queued",provisioning:"Provisioning container…",cloning:"Cloning repo…",running:"Bot is working…",patching:"Applying patch…",opening_pr:"Opening PR…",done:"Done",failed:"Failed"};function _1({agents:Z}){let[Y,O]=P(null),[W,K]=P([]),[Q,G]=P([]),[z,H]=P(""),[q,$]=P(""),[J,X]=P(""),[N,V]=P(!1),[C,U]=P(""),[F,D]=P(null),k=(Z||[]).filter((B)=>B.auth_state==="connected"),S=H0(async()=>{try{let B=await E("/jobs");G(B.jobs||[])}catch(B){console.error("Failed to load jobs:",B)}},[]);c(()=>{(async()=>{try{let B=await E("/github/status");if(O(B),B.connected){let A=await E("/github/repos");K(A.repos||[])}}catch(B){U(B.message)}await S()})()},[]),c(()=>{if(!Q.some((j)=>!["done","failed"].includes(j.status)))return;let A=setInterval(S,3000);return()=>clearInterval(A)},[Q,S]);async function v(B){if(B?.preventDefault(),!z||!q||!J.trim()||N)return;V(!0),U("");try{let A=await E("/jobs",{method:"POST",body:JSON.stringify({agent_id:z,repo:q,instruction:J.trim()})});G((j)=>[A.job,...j]),X("")}catch(A){U(A.message)}finally{V(!1)}}return R`
+    <div style=${{maxWidth:"760px",margin:"0 auto",padding:"2rem",overflowY:"auto",flex:1}}>
+      <h2 style=${{fontSize:"1.25rem",fontWeight:700,marginBottom:"0.25rem"}}>🚀 Jobs</h2>
+      <p style=${{fontSize:"0.8rem",color:"var(--text-dim)",marginBottom:"1.5rem"}}>
+        Pick a repo and a bot, describe what to do, and orchestral spins up a fresh container,
+        asks the bot for a patch, and opens a pull request.
+      </p>
+
+      ${!Y?.configured&&R`
+        <div style=${{padding:"0.9rem",background:"rgba(245,158,11,0.1)",border:"1px solid var(--warning)",borderRadius:"var(--radius)",fontSize:"0.85rem",marginBottom:"1.5rem"}}>
+          GitHub isn't configured on the server yet. Set <code>GITHUB_CLIENT_ID</code> / <code>GITHUB_CLIENT_SECRET</code>
+          from a GitHub OAuth App (callback: <code>/api/github/callback</code>) to enable jobs.
+        </div>
+      `}
+
+      ${Y?.configured&&!Y?.connected&&R`
+        <div style=${{padding:"0.9rem",background:"var(--bg-card)",border:"1px solid var(--border)",borderRadius:"var(--radius)",marginBottom:"1.5rem"}}>
+          <p style=${{fontSize:"0.85rem",marginBottom:"0.75rem"}}>Connect GitHub to pick a repo and open PRs.</p>
+          <a href="/api/github/login" style=${{display:"inline-block",padding:"0.5rem 1rem",borderRadius:"var(--radius)",background:"var(--accent)",color:"white",textDecoration:"none",fontWeight:600,fontSize:"0.85rem"}}>
+            🔗 Connect GitHub
+          </a>
+        </div>
+      `}
+
+      ${Y?.connected&&R`
+        <div style=${{fontSize:"0.8rem",color:"var(--success)",marginBottom:"1rem"}}>
+          ● Connected to GitHub as ${Y.login}
+        </div>
+
+        <form onSubmit=${v} style=${{display:"flex",flexDirection:"column",gap:"1rem",marginBottom:"2rem"}}>
+          <div>
+            <label style=${{display:"block",fontSize:"0.75rem",color:"var(--text-dim)",marginBottom:"0.3rem"}}>Repository</label>
+            <select value=${q} onChange=${(B)=>$(B.target.value)} style=${{...p}}>
+              <option value="">Select a repo…</option>
+              ${W.map((B)=>R`<option key=${B.full_name} value=${B.full_name}>${B.full_name}${B.private?" \uD83D\uDD12":""}</option>`)}
+            </select>
+          </div>
+
+          <div>
+            <label style=${{display:"block",fontSize:"0.75rem",color:"var(--text-dim)",marginBottom:"0.3rem"}}>Bot</label>
+            <select value=${z} onChange=${(B)=>H(B.target.value)} style=${{...p}}>
+              <option value="">Select a bot…</option>
+              ${k.map((B)=>R`<option key=${B.id} value=${B.id}>${B.name}</option>`)}
+            </select>
+            ${k.length===0&&R`<p style=${{fontSize:"0.7rem",color:"var(--text-dimmer)",marginTop:"0.3rem"}}>No connected bots yet — add one first.</p>`}
+          </div>
+
+          <div>
+            <label style=${{display:"block",fontSize:"0.75rem",color:"var(--text-dim)",marginBottom:"0.3rem"}}>Command</label>
+            <textarea
+              value=${J}
+              onInput=${(B)=>X(B.target.value)}
+              placeholder="e.g. Fix the off-by-one error in the pagination helper"
+              rows="3"
+              style=${{...p,resize:"vertical",fontFamily:"inherit"}}
+            />
+          </div>
+
+          ${C&&R`<div style=${{color:"var(--danger)",fontSize:"0.8rem"}}>${C}</div>`}
+
+          <button type="submit" disabled=${!z||!q||!J.trim()||N} style=${{alignSelf:"flex-start",padding:"0.6rem 1.5rem",borderRadius:"var(--radius)",background:"var(--accent)",color:"white",border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.9rem",opacity:!z||!q||!J.trim()||N?0.5:1}}>
+            ${N?"Starting…":"▶ Run Job"}
+          </button>
+        </form>
+      `}
+
+      <h3 style=${{fontSize:"0.95rem",fontWeight:700,marginBottom:"0.75rem"}}>Recent jobs</h3>
+      ${Q.length===0&&R`<p style=${{fontSize:"0.8rem",color:"var(--text-dimmer)"}}>No jobs yet.</p>`}
+      <div style=${{display:"flex",flexDirection:"column",gap:"0.5rem"}}>
+        ${Q.map((B)=>R`
+          <div key=${B.id} style=${{border:"1px solid var(--border)",borderRadius:"var(--radius)",padding:"0.75rem 1rem",background:"var(--bg-card)"}}>
+            <div style=${{display:"flex",alignItems:"center",gap:"0.6rem",cursor:"pointer"}}
+                 onClick=${()=>D(F===B.id?null:B.id)}>
+              <span style=${{fontSize:"0.7rem",fontWeight:700,padding:"0.15rem 0.5rem",borderRadius:"999px",background:B.status==="done"?"rgba(34,197,94,0.15)":B.status==="failed"?"rgba(239,68,68,0.15)":"rgba(99,102,241,0.15)",color:B.status==="done"?"var(--success)":B.status==="failed"?"var(--danger)":"var(--accent)"}}>
+                ${F1[B.status]||B.status}
+              </span>
+              <span style=${{fontSize:"0.85rem",fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                ${B.repo}: ${B.instruction}
+              </span>
+              ${B.pr_url&&R`
+                <a href=${B.pr_url} target="_blank" onClick=${(A)=>A.stopPropagation()} style=${{fontSize:"0.75rem",color:"var(--accent)"}}>
+                  View PR →
+                </a>
+              `}
+            </div>
+            ${F===B.id&&R`
+              <pre style=${{marginTop:"0.75rem",padding:"0.75rem",background:"var(--bg)",borderRadius:"8px",fontSize:"0.7rem",color:"var(--text-dim)",whiteSpace:"pre-wrap",maxHeight:"300px",overflowY:"auto"}}>${B.log||"(no log yet)"}${B.error?`
+
+Error: ${B.error}`:""}</pre>
+            `}
+          </div>
+        `)}
+      </div>
+    </div>
+  `}function M1({onAdded:Z}){let[Y,O]=P(""),[W,K]=P(""),[Q,G]=P(""),[z,H]=P(""),[q,$]=P(!1),[J,X]=P(null);async function N(){H(""),X(null),$(!0);try{let V=await E("/agents",{method:"POST",body:JSON.stringify({card_url:Y,oidc_client_id:W,oidc_client_secret:Q})});Z(V.agent)}catch(V){H(V.message)}finally{$(!1)}}return R`
     <div style=${{maxWidth:"640px",margin:"0 auto",padding:"2rem",overflowY:"auto",flex:1}}>
       <h2 style=${{fontSize:"1.25rem",fontWeight:700,marginBottom:"1.5rem"}}>Add A2A Agent</h2>
 
@@ -76,10 +177,10 @@ var G0,L,I0,q1,m,C0,x0,S0,H0,t,i,v0,$0,N0,V0,B1,O0={},Y0=[],z1=/acit|ex(?:s|g|n|
         </label>
         <input
           type="text"
-          value=${O}
-          onInput=${(V)=>Z(V.target.value)}
+          value=${Y}
+          onInput=${(V)=>O(V.target.value)}
           placeholder="https://agent.example.com"
-          style=${q0}
+          style=${p}
         />
         <p style=${{fontSize:"0.75rem",color:"var(--text-dimmer)",marginTop:"0.4rem"}}>
           The URL where the agent publishes its Agent Card. Orchestral will fetch /.well-known/agent-card.json
@@ -98,60 +199,60 @@ var G0,L,I0,q1,m,C0,x0,S0,H0,t,i,v0,$0,N0,V0,B1,O0={},Y0=[],z1=/acit|ex(?:s|g|n|
           <label style=${{display:"block",fontSize:"0.75rem",color:"var(--text-dim)",marginBottom:"0.3rem"}}>
             Client ID (optional)
           </label>
-          <input type="text" value=${G} onInput=${(V)=>K(V.target.value)} style=${q0} />
+          <input type="text" value=${W} onInput=${(V)=>K(V.target.value)} style=${p} />
         </div>
       </details>
 
-      ${q&&b`<div style=${{padding:"0.75rem",background:"rgba(239,68,68,0.1)",border:"1px solid var(--danger)",borderRadius:"var(--radius)",color:"var(--danger)",fontSize:"0.85rem",marginBottom:"1rem"}}>
-        ${q}
+      ${z&&R`<div style=${{padding:"0.75rem",background:"rgba(239,68,68,0.1)",border:"1px solid var(--danger)",borderRadius:"var(--radius)",color:"var(--danger)",fontSize:"0.85rem",marginBottom:"1rem"}}>
+        ${z}
       </div>`}
 
       <button
-        onClick=${z}
-        disabled=${!O||J}
-        style=${{padding:"0.6rem 1.5rem",borderRadius:"var(--radius)",background:"var(--accent)",color:"white",border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.9rem",opacity:!O||J?0.5:1}}
+        onClick=${N}
+        disabled=${!Y||q}
+        style=${{padding:"0.6rem 1.5rem",borderRadius:"var(--radius)",background:"var(--accent)",color:"white",border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.9rem",opacity:!Y||q?0.5:1}}
       >
-        ${J?"Connecting…":"Add Agent"}
+        ${q?"Connecting…":"Add Agent"}
       </button>
     </div>
-  `}function P1({agent:Y,onRefresh:O}){let[Z,G]=T([]),[K,Q]=T(""),[X,q]=T(!1),[B,J]=T(null),[H,$]=T([]),[W,z]=T(""),[V,F]=T(Y),U=D0(null),D=D0(null);l(()=>{k(`/agents/${Y.id}`).then((N)=>F(N)).catch(()=>{})},[Y.id]);let j=P0(async(N)=>{J(N);let R=await k(`/conversations/${N}/messages`);G(R.messages||[])},[]);l(()=>{(async()=>{try{let R=(await k(`/agents/${Y.id}/conversations`)).conversations||[];if($(R),R.length>0)await j(R[0].id);else{let M=await k(`/agents/${Y.id}/conversations`,{method:"POST"});$([M.conversation]),J(M.conversation.id),G([])}}catch(N){z(N.message)}})()},[Y.id]);async function C(){z("");try{let N=await k(`/agents/${Y.id}/conversations`,{method:"POST"});$((R)=>[N.conversation,...R]),J(N.conversation.id),G([]),Q("")}catch(N){z(N.message)}}async function f(N){if(N===B)return;z("");try{await j(N)}catch(R){z(R.message)}}l(()=>{U.current?.scrollIntoView({behavior:"smooth"})},[Z]);async function A(N){if(N?.preventDefault(),!K.trim()||!B||X)return;let R=K.trim();Q(""),q(!0),z(""),G((M)=>[...M,{role:"user",text:R,created_at:Date.now()/1000,id:"temp-"+Date.now()}]),G((M)=>[...M,{role:"agent",text:"",created_at:Date.now()/1000,id:"temp-agent-"+Date.now(),streaming:!0}]);try{if(V?.agent_card?.capabilities?.streaming??!0)await h(R);else await u(R)}catch(M){if(z(M.message),M.message.includes("Authentication"))O();G((B0)=>B0.filter((a)=>!a.streaming))}finally{q(!1)}}async function h(N){let R=await fetch(`/api/conversations/${B}/stream`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:N}),credentials:"same-origin"});if(!R.ok){let o=await R.json().catch(()=>({error:R.statusText}));throw Error(o.error||`HTTP ${R.status}`)}let M=R.body.getReader(),B0=new TextDecoder,a="",w0="";while(!0){let{done:o,value:K1}=await M.read();if(o)break;a+=B0.decode(K1,{stream:!0});let M0=a.split(`
+  `}function w1({agent:Z,onRefresh:Y}){let[O,W]=P([]),[K,Q]=P(""),[G,z]=P(!1),[H,q]=P(null),[$,J]=P([]),[X,N]=P(""),[V,C]=P(Z),U=_0(null),F=_0(null);c(()=>{E(`/agents/${Z.id}`).then((L)=>C(L)).catch(()=>{})},[Z.id]);let D=H0(async(L)=>{q(L);let _=await E(`/conversations/${L}/messages`);W(_.messages||[])},[]);c(()=>{(async()=>{try{let _=(await E(`/agents/${Z.id}/conversations`)).conversations||[];if(J(_),_.length>0)await D(_[0].id);else{let x=await E(`/agents/${Z.id}/conversations`,{method:"POST"});J([x.conversation]),q(x.conversation.id),W([])}}catch(L){N(L.message)}})()},[Z.id]);async function k(){N("");try{let L=await E(`/agents/${Z.id}/conversations`,{method:"POST"});J((_)=>[L.conversation,..._]),q(L.conversation.id),W([]),Q("")}catch(L){N(L.message)}}async function S(L){if(L===H)return;N("");try{await D(L)}catch(_){N(_.message)}}c(()=>{U.current?.scrollIntoView({behavior:"smooth"})},[O]);async function v(L){if(L?.preventDefault(),!K.trim()||!H||G)return;let _=K.trim();Q(""),z(!0),N(""),W((x)=>[...x,{role:"user",text:_,created_at:Date.now()/1000,id:"temp-"+Date.now()}]),W((x)=>[...x,{role:"agent",text:"",created_at:Date.now()/1000,id:"temp-agent-"+Date.now(),streaming:!0}]);try{if(V?.agent_card?.capabilities?.streaming??!0)await B(_);else await A(_)}catch(x){if(N(x.message),x.message.includes("Authentication"))Y();W((N0)=>N0.filter((r)=>!r.streaming))}finally{z(!1)}}async function B(L){let _=await fetch(`/api/conversations/${H}/stream`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:L}),credentials:"same-origin"});if(!_.ok){let l=await _.json().catch(()=>({error:_.statusText}));throw Error(l.error||`HTTP ${_.status}`)}let x=_.body.getReader(),N0=new TextDecoder,r="",C0="";while(!0){let{done:l,value:K1}=await x.read();if(l)break;r+=N0.decode(K1,{stream:!0});let E0=r.split(`
 
-`);a=M0.pop()||"";for(let J1 of M0)for(let E0 of J1.split(`
-`))if(E0.startsWith("data: "))try{let E=JSON.parse(E0.slice(6));if(E.error)throw Error(E.error);let c="";if(E.task?.status?.message?.parts)c=E.task.status.message.parts.map((I)=>I.text||"").join("");else if(E.message?.parts)c=E.message.parts.map((I)=>I.text||"").join("");else if(E.artifactUpdate?.artifact?.parts)c=E.artifactUpdate.artifact.parts.map((I)=>I.text||"").join("");else if(E.statusUpdate?.status?.message?.parts)c=E.statusUpdate.status.message.parts.map((I)=>I.text||"").join("");if(c)w0+=c,G((I)=>I.map((z0)=>z0.streaming?{...z0,text:w0}:z0))}catch(E){if(E.message)throw E}}if(B){let o=await k(`/conversations/${B}/messages`);G(o.messages||[])}}async function u(N){let R=await k(`/conversations/${B}/send`,{method:"POST",body:JSON.stringify({text:N})}),M=await k(`/conversations/${B}/messages`);G(M.messages||[])}let[S,d]=T(!1),[w,v]=T(""),[F0,Q1]=T("");async function W1(){d(!0),z("");try{await k(`/agents/${Y.id}/credentials`,{method:"POST",body:JSON.stringify({client_id:w,client_secret:F0})}),window.location.href=`/api/agents/${Y.id}/connect`}catch(N){z(N.message)}finally{d(!1)}}let y=V?.auth_state!=="connected",X1=typeof window<"u"?`${window.location.origin}/api/agent/oidc/callback`:"";return b`
+`);r=E0.pop()||"";for(let q1 of E0)for(let k0 of q1.split(`
+`))if(k0.startsWith("data: "))try{let I=JSON.parse(k0.slice(6));if(I.error)throw Error(I.error);let i="";if(I.task?.status?.message?.parts)i=I.task.status.message.parts.map((f)=>f.text||"").join("");else if(I.message?.parts)i=I.message.parts.map((f)=>f.text||"").join("");else if(I.artifactUpdate?.artifact?.parts)i=I.artifactUpdate.artifact.parts.map((f)=>f.text||"").join("");else if(I.statusUpdate?.status?.message?.parts)i=I.statusUpdate.status.message.parts.map((f)=>f.text||"").join("");if(i)C0+=i,W((f)=>f.map(($0)=>$0.streaming?{...$0,text:C0}:$0))}catch(I){if(I.message)throw I}}if(H){let l=await E(`/conversations/${H}/messages`);W(l.messages||[])}}async function A(L){let _=await E(`/conversations/${H}/send`,{method:"POST",body:JSON.stringify({text:L})}),x=await E(`/conversations/${H}/messages`);W(x.messages||[])}let[j,a]=P(!1),[y,h]=P(""),[w0,W1]=P("");async function X1(){a(!0),N("");try{await E(`/agents/${Z.id}/credentials`,{method:"POST",body:JSON.stringify({client_id:y,client_secret:w0})}),window.location.href=`/api/agents/${Z.id}/connect`}catch(L){N(L.message)}finally{a(!1)}}let b=V?.auth_state!=="connected",G1=typeof window<"u"?`${window.location.origin}/api/agent/oidc/callback`:"";return R`
     <div style=${{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       ${""}
       <header style=${{padding:"1rem 1.5rem",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",gap:"0.75rem"}}>
-        ${V?.icon_url?b`<img src=${V.icon_url} style=${{width:"2rem",height:"2rem",borderRadius:"50%"}} />`:b`<span style=${{fontSize:"1.5rem"}}>🤖</span>`}
+        ${V?.icon_url?R`<img src=${V.icon_url} style=${{width:"2rem",height:"2rem",borderRadius:"50%"}} />`:R`<span style=${{fontSize:"1.5rem"}}>🤖</span>`}
         <div style=${{flex:1}}>
-          <h2 style=${{fontSize:"1rem",fontWeight:600}}>${V?.name||Y.name}</h2>
-          ${V?.description&&b`<p style=${{fontSize:"0.75rem",color:"var(--text-dim)"}}>${V.description}</p>`}
+          <h2 style=${{fontSize:"1rem",fontWeight:600}}>${V?.name||Z.name}</h2>
+          ${V?.description&&R`<p style=${{fontSize:"0.75rem",color:"var(--text-dim)"}}>${V.description}</p>`}
         </div>
-        ${H.length>1&&b`
+        ${$.length>1&&R`
           <select
-            value=${B}
-            onChange=${(N)=>f(N.target.value)}
+            value=${H}
+            onChange=${(L)=>S(L.target.value)}
             style=${{padding:"0.4rem 0.6rem",borderRadius:"var(--radius)",background:"var(--bg-card)",border:"1px solid var(--border)",color:"var(--text)",fontSize:"0.75rem",outline:"none"}}
           >
-            ${H.map((N,R)=>b`
-              <option key=${N.id} value=${N.id}>
-                ${new Date(N.created_at*1000).toLocaleString()} ${R===0?"(latest)":""}
+            ${$.map((L,_)=>R`
+              <option key=${L.id} value=${L.id}>
+                ${new Date(L.created_at*1000).toLocaleString()} ${_===0?"(latest)":""}
               </option>
             `)}
           </select>
         `}
         <button
-          onClick=${C}
+          onClick=${k}
           title="Start a new conversation with this agent"
           style=${{padding:"0.4rem 0.75rem",borderRadius:"var(--radius)",background:"var(--bg-card)",border:"1px solid var(--border)",color:"var(--text)",cursor:"pointer",fontWeight:600,fontSize:"0.75rem"}}
         >
           + New Conversation
         </button>
-        <div style=${{padding:"0.25rem 0.6rem",borderRadius:"999px",fontSize:"0.75rem",fontWeight:600,background:y?"rgba(245,158,11,0.1)":"rgba(34,197,94,0.1)",color:y?"var(--warning)":"var(--success)",border:`1px solid ${y?"var(--warning)":"var(--success)"}`}}>
-          ${y?"Needs Auth":"Connected"}
+        <div style=${{padding:"0.25rem 0.6rem",borderRadius:"999px",fontSize:"0.75rem",fontWeight:600,background:b?"rgba(245,158,11,0.1)":"rgba(34,197,94,0.1)",color:b?"var(--warning)":"var(--success)",border:`1px solid ${b?"var(--warning)":"var(--success)"}`}}>
+          ${b?"Needs Auth":"Connected"}
         </div>
       </header>
 
-      ${y&&b`
+      ${b&&R`
         <div style=${{padding:"1.5rem",borderBottom:"1px solid var(--border)",maxWidth:"600px"}}>
           <p style=${{color:"var(--text)",marginBottom:"0.5rem",fontSize:"0.9rem"}}>
             This agent requires OIDC via Pocket ID.
@@ -167,10 +268,10 @@ var G0,L,I0,q1,m,C0,x0,S0,H0,t,i,v0,$0,N0,V0,B1,O0={},Y0=[],z1=/acit|ex(?:s|g|n|
             </label>
             <input
               type="text"
-              value=${w}
-              onInput=${(N)=>v(N.target.value)}
+              value=${y}
+              onInput=${(L)=>h(L.target.value)}
               placeholder="Pocket ID client ID"
-              style=${{...q0,width:"100%"}}
+              style=${{...p,width:"100%"}}
             />
           </div>
           <div style=${{marginBottom:"0.75rem"}}>
@@ -179,23 +280,23 @@ var G0,L,I0,q1,m,C0,x0,S0,H0,t,i,v0,$0,N0,V0,B1,O0={},Y0=[],z1=/acit|ex(?:s|g|n|
             </label>
             <input
               type="password"
-              value=${F0}
-              onInput=${(N)=>Q1(N.target.value)}
+              value=${w0}
+              onInput=${(L)=>W1(L.target.value)}
               placeholder="Pocket ID client secret"
-              style=${{...q0,width:"100%"}}
+              style=${{...p,width:"100%"}}
             />
           </div>
           <div style=${{padding:"0.6rem",background:"var(--bg)",borderRadius:"8px",marginBottom:"1rem",fontSize:"0.75rem",color:"var(--text-dim)"}}>
             <strong style=${{color:"var(--warning)"}}>One-time setup:</strong> Add this redirect URI to this client in Pocket ID:
             <br/>
-            <code style=${{color:"var(--accent)",fontSize:"0.7rem",wordBreak:"break-all"}}>${X1}</code>
+            <code style=${{color:"var(--accent)",fontSize:"0.7rem",wordBreak:"break-all"}}>${G1}</code>
             <br/>
             <a href="https://id.openbao.boxd.sh/settings/admin/oidc-clients" target="_blank" style=${{color:"var(--accent)",fontSize:"0.7rem"}}>
               → Pocket ID admin
             </a>
           </div>
-          <button onClick=${W1} disabled=${!w||S} style=${{padding:"0.6rem 1.5rem",borderRadius:"var(--radius)",background:"var(--accent)",color:"white",border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.9rem",opacity:!w||S?0.5:1}}>
-            ${S?"Redirecting…":"\uD83D\uDD11 Connect"}
+          <button onClick=${X1} disabled=${!y||j} style=${{padding:"0.6rem 1.5rem",borderRadius:"var(--radius)",background:"var(--accent)",color:"white",border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.9rem",opacity:!y||j?0.5:1}}>
+            ${j?"Redirecting…":"\uD83D\uDD11 Connect"}
           </button>
         </div>
       `}
@@ -203,41 +304,41 @@ var G0,L,I0,q1,m,C0,x0,S0,H0,t,i,v0,$0,N0,V0,B1,O0={},Y0=[],z1=/acit|ex(?:s|g|n|
       ${""}
       <div style=${{flex:1,overflowY:"auto",padding:"1.5rem"}}>
         <div style=${{maxWidth:"720px",margin:"0 auto",display:"flex",flexDirection:"column",gap:"0.75rem"}}>
-          ${Z.length===0&&!y&&b`
+          ${O.length===0&&!b&&R`
             <div style=${{textAlign:"center",padding:"3rem",color:"var(--text-dimmer)"}}>
               <p style=${{fontSize:"0.9rem"}}>Send a message to start talking to this agent via A2A</p>
             </div>
           `}
-          ${Z.map((N)=>b`
-            <div key=${N.id} style=${{maxWidth:"85%",alignSelf:N.role==="user"?"flex-end":"flex-start",padding:"0.6rem 0.9rem",borderRadius:"var(--radius)",fontSize:"0.875rem",lineHeight:1.5,background:N.role==="user"?"var(--accent)":"var(--bg-card)",color:N.role==="user"?"white":"var(--text)",whiteSpace:"pre-wrap"}}>
-              ${N.text||(N.streaming?"…":"")}
+          ${O.map((L)=>R`
+            <div key=${L.id} style=${{maxWidth:"85%",alignSelf:L.role==="user"?"flex-end":"flex-start",padding:"0.6rem 0.9rem",borderRadius:"var(--radius)",fontSize:"0.875rem",lineHeight:1.5,background:L.role==="user"?"var(--accent)":"var(--bg-card)",color:L.role==="user"?"white":"var(--text)",whiteSpace:"pre-wrap"}}>
+              ${L.text||(L.streaming?"…":"")}
             </div>
           `)}
           <div ref=${U} />
         </div>
       </div>
 
-      ${W&&b`
+      ${X&&R`
         <div style=${{padding:"0.5rem 1.5rem",color:"var(--danger)",fontSize:"0.8rem"}}>
-          ${W}
+          ${X}
         </div>
       `}
 
       ${""}
       <footer style=${{borderTop:"1px solid var(--border)",padding:"1rem 1.5rem"}}>
-        <form onSubmit=${A} style=${{maxWidth:"720px",margin:"0 auto",display:"flex",gap:"0.5rem"}}>
+        <form onSubmit=${v} style=${{maxWidth:"720px",margin:"0 auto",display:"flex",gap:"0.5rem"}}>
           <input
             type="text"
             value=${K}
-            onInput=${(N)=>Q(N.target.value)}
-            placeholder=${y?"Connect to start messaging…":"Send a message…"}
-            disabled=${y||X}
-            style=${{flex:1,padding:"0.6rem 0.9rem",borderRadius:"var(--radius)",background:"var(--bg-card)",border:"1px solid var(--border)",color:"var(--text)",fontSize:"0.875rem",outline:"none",opacity:y||X?0.5:1}}
+            onInput=${(L)=>Q(L.target.value)}
+            placeholder=${b?"Connect to start messaging…":"Send a message…"}
+            disabled=${b||G}
+            style=${{flex:1,padding:"0.6rem 0.9rem",borderRadius:"var(--radius)",background:"var(--bg-card)",border:"1px solid var(--border)",color:"var(--text)",fontSize:"0.875rem",outline:"none",opacity:b||G?0.5:1}}
           />
-          <button type="submit" disabled=${y||X||!K.trim()} style=${{padding:"0.6rem 1.2rem",borderRadius:"var(--radius)",background:"var(--accent)",color:"white",border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.85rem",opacity:y||X||!K.trim()?0.5:1}}>
-            ${X?"…":"Send"}
+          <button type="submit" disabled=${b||G||!K.trim()} style=${{padding:"0.6rem 1.2rem",borderRadius:"var(--radius)",background:"var(--accent)",color:"white",border:"none",cursor:"pointer",fontWeight:600,fontSize:"0.85rem",opacity:b||G||!K.trim()?0.5:1}}>
+            ${G?"…":"Send"}
           </button>
         </form>
       </footer>
     </div>
-  `}var q0={width:"100%",padding:"0.6rem 0.9rem",borderRadius:"var(--radius)",background:"var(--bg-card)",border:"1px solid var(--border)",color:"var(--text)",fontSize:"0.875rem",outline:"none"};K0(b`<${T1} />`,document.getElementById("root"));
+  `}var p={width:"100%",padding:"0.6rem 0.9rem",borderRadius:"var(--radius)",background:"var(--bg-card)",border:"1px solid var(--border)",color:"var(--text)",fontSize:"0.875rem",outline:"none"};q0(R`<${T1} />`,document.getElementById("root"));

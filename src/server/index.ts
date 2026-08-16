@@ -20,6 +20,7 @@ import {
   createConversation, getConversation, listConversations,
   addMessage, listMessages, updateConversationContext,
   getSetting, setSetting,
+  createJob, listJobs, getJob,
   type AgentRecord,
 } from "./store.ts";
 import {
@@ -32,6 +33,10 @@ import {
   fetchAgentCard, detectSecurity, sendMessage, sendMessageStream,
   extractText, AuthError,
 } from "./a2a-client.ts";
+import {
+  buildGithubAuthorizeUrl, exchangeGithubCode, getGithubUser, listGithubRepos,
+} from "./github.ts";
+import { runJob } from "./jobs.ts";
 
 // ─── Config ────────────────────────────────────────────────────────────────
 
@@ -50,6 +55,14 @@ const PKCE_VERIFIER_COOKIE = "orchestral_pkce";
 const RETURN_URL_COOKIE = "orchestral_return";
 const AGENT_OIDC_REDIRECT = `${ORCHESTRAL_URL}/api/agent/oidc/callback`;
 const CONSOLE_OIDC_REDIRECT = `${ORCHESTRAL_URL}/api/auth/callback`;
+
+// GitHub OAuth (for repo access + opening PRs from jobs).
+// Register an OAuth App at https://github.com/settings/developers with
+// callback URL `${ORCHESTRAL_URL}/api/github/callback`.
+const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID ?? "";
+const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET ?? "";
+const GITHUB_OAUTH_REDIRECT = `${ORCHESTRAL_URL}/api/github/callback`;
+const GITHUB_STATE_COOKIE = "orchestral_github_state";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -99,7 +112,8 @@ app.use("/api/*", async (c, next) => {
     path === "/api/auth/callback" ||
     path === "/api/auth/logout" ||
     path === "/api/health" ||
-    path === "/api/agent/oidc/callback"
+    path === "/api/agent/oidc/callback" ||
+    path === "/api/github/callback"
   ) {
     return next();
   }
@@ -533,6 +547,101 @@ async function ensureFreshToken(agent: AgentRecord): Promise<AgentRecord> {
     return agent;
   }
 }
+
+// ─── GitHub connection (for repo picking + opening PRs from jobs) ──────────────
+
+app.get("/api/github/status", (c) => {
+  const token = getSetting("github_token");
+  const login = getSetting("github_login");
+  return c.json({
+    configured: GITHUB_CLIENT_ID !== "",
+    connected: !!token,
+    login: login || null,
+  });
+});
+
+app.get("/api/github/login", async (c) => {
+  if (!GITHUB_CLIENT_ID) return c.json({ error: "GITHUB_CLIENT_ID not configured on the server" }, 400);
+  const state = await randomString(16);
+  setCookie(c, GITHUB_STATE_COOKIE, state, { maxAge: 600, path: "/", httpOnly: true, secure: COOKIE_SECURE, sameSite: "Lax" });
+  const authUrl = buildGithubAuthorizeUrl({
+    clientId: GITHUB_CLIENT_ID,
+    redirectUri: GITHUB_OAUTH_REDIRECT,
+    state,
+  });
+  return c.redirect(authUrl);
+});
+
+app.get("/api/github/callback", async (c) => {
+  const code = c.req.query("code");
+  const state = c.req.query("state");
+  const error = c.req.query("error");
+  if (error) return c.html(renderErrorPage(`GitHub authentication error: ${error}`));
+  if (!code || !state) return c.html(renderErrorPage("Missing code or state"));
+
+  const cookies = parseCookies(c.req.raw);
+  if (cookies[GITHUB_STATE_COOKIE] !== state) return c.html(renderErrorPage("Invalid state"));
+  setCookie(c, GITHUB_STATE_COOKIE, "", { maxAge: 0, path: "/" });
+
+  try {
+    const tokens = await exchangeGithubCode({
+      clientId: GITHUB_CLIENT_ID,
+      clientSecret: GITHUB_CLIENT_SECRET,
+      code,
+      redirectUri: GITHUB_OAUTH_REDIRECT,
+    });
+    setSetting("github_token", tokens.access_token);
+    const user = await getGithubUser(tokens.access_token);
+    setSetting("github_login", user.login);
+  } catch (e) {
+    return c.html(renderErrorPage(`GitHub connection failed: ${(e as Error).message}`));
+  }
+
+  return c.redirect("/");
+});
+
+app.get("/api/github/repos", async (c) => {
+  const token = getSetting("github_token");
+  if (!token) return c.json({ error: "GitHub not connected" }, 400);
+  try {
+    const repos = await listGithubRepos(token);
+    return c.json({
+      repos: repos.map(r => ({
+        full_name: r.full_name, private: r.private,
+        default_branch: r.default_branch, html_url: r.html_url,
+      })),
+    });
+  } catch (e) {
+    return c.json({ error: (e as Error).message }, 502);
+  }
+});
+
+// ─── Jobs (bot + repo + instruction → PR, run in a fresh boxd container) ───────
+
+app.get("/api/jobs", (c) => c.json({ jobs: listJobs() }));
+
+app.get("/api/jobs/:id", (c) => {
+  const job = getJob(c.req.param("id"));
+  if (!job) return c.json({ error: "Job not found" }, 404);
+  return c.json({ job });
+});
+
+app.post("/api/jobs", async (c) => {
+  const body = await c.req.json();
+  const { agent_id, repo, instruction } = body;
+  if (!agent_id || !repo || !instruction) {
+    return c.json({ error: "agent_id, repo, and instruction are required" }, 400);
+  }
+  const agent = getAgent(agent_id);
+  if (!agent) return c.json({ error: "Agent not found" }, 404);
+  if (!getSetting("github_token")) return c.json({ error: "GitHub not connected" }, 400);
+
+  const job = createJob(agent_id, repo, instruction);
+  // Fire and forget — job status/log is polled via GET /api/jobs/:id.
+  runJob(job.id).catch((e) => console.error(`Job ${job.id} crashed:`, e));
+
+  return c.json({ job });
+});
 
 // ─── Conversations & Messaging ──────────────────────────────────────────────────
 

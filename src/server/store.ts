@@ -63,6 +63,22 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS jobs (
+    id TEXT PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    repo TEXT NOT NULL,
+    instruction TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'queued',
+    machine_name TEXT,
+    branch TEXT,
+    pr_url TEXT,
+    log TEXT NOT NULL DEFAULT '',
+    error TEXT,
+    created_at INTEGER DEFAULT (unixepoch()),
+    updated_at INTEGER DEFAULT (unixepoch()),
+    FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+  );
 `);
 
 // ─── Agent Store ────────────────────────────────────────────────────────────
@@ -186,6 +202,59 @@ export function listMessages(convId: string) {
 
 export function updateConversationContext(convId: string, contextId: string) {
   db.prepare("UPDATE conversations SET context_id = ? WHERE id = ?").run(contextId, convId);
+}
+
+// ─── Jobs ──────────────────────────────────────────────────────────────────
+// A "job" is a single run: an agent (bot) working on a repo in a fresh boxd
+// container, from an instruction to (hopefully) an open pull request.
+
+export interface JobRecord {
+  id: string;
+  agent_id: string;
+  repo: string;
+  instruction: string;
+  status: string;
+  machine_name: string | null;
+  branch: string | null;
+  pr_url: string | null;
+  log: string;
+  error: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+export function createJob(agentId: string, repo: string, instruction: string): JobRecord {
+  const id = crypto.randomUUID();
+  db.prepare(`
+    INSERT INTO jobs (id, agent_id, repo, instruction, status) VALUES (?, ?, ?, ?, 'queued')
+  `).run(id, agentId, repo, instruction);
+  return getJob(id)!;
+}
+
+export function getJob(id: string): JobRecord | null {
+  return db.prepare("SELECT * FROM jobs WHERE id = ?").get(id) as JobRecord | null;
+}
+
+export function listJobs(): JobRecord[] {
+  return db.prepare("SELECT * FROM jobs ORDER BY created_at DESC").all() as JobRecord[];
+}
+
+export function updateJob(id: string, updates: Partial<JobRecord>): JobRecord | null {
+  const current = getJob(id);
+  if (!current) return null;
+  const merged = { ...current, ...updates, id };
+  db.prepare(`
+    UPDATE jobs SET status = ?, machine_name = ?, branch = ?, pr_url = ?, log = ?, error = ?, updated_at = unixepoch()
+    WHERE id = ?
+  `).run(merged.status, merged.machine_name, merged.branch, merged.pr_url, merged.log, merged.error, id);
+  return getJob(id);
+}
+
+export function appendJobLog(id: string, line: string): void {
+  const job = getJob(id);
+  if (!job) return;
+  const log = job.log ? `${job.log}\n${line}` : line;
+  db.prepare("UPDATE jobs SET log = ?, updated_at = unixepoch() WHERE id = ?").run(log, id);
 }
 
 // ─── Settings ──────────────────────────────────────────────────────────────
