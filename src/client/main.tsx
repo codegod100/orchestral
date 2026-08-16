@@ -21,7 +21,7 @@ async function api(path: string, opts?: RequestInit) {
 function App() {
   const [agents, setAgents] = useState<any[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
-  const [view, setView] = useState<"list" | "chat" | "add">("list");
+  const [view, setView] = useState<"list" | "chat" | "add" | "jobs">("list");
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -70,7 +70,7 @@ function App() {
           </p>
         </div>
 
-        <div style=${{ padding: "0.75rem" }}>
+        <div style=${{ padding: "0.75rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
           <button
             onClick=${() => { setView("add"); setSelectedAgent(null); }}
             style=${{
@@ -80,6 +80,17 @@ function App() {
             }}
           >
             + Add Agent
+          </button>
+          <button
+            onClick=${() => { setView("jobs"); setSelectedAgent(null); }}
+            style=${{
+              width: "100%", padding: "0.6rem 0.75rem", borderRadius: "var(--radius)",
+              background: view === "jobs" ? "var(--bg-hover)" : "transparent",
+              border: "1px solid var(--border)", color: "var(--text)", cursor: "pointer",
+              fontWeight: 600, fontSize: "0.85rem",
+            }}
+          >
+            🚀 Jobs
           </button>
         </div>
 
@@ -131,6 +142,7 @@ function App() {
       <main style=${{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
         ${view === "add" && html`<${AddAgent} onAdded=${(a) => { refreshAgents(); setSelectedAgent(a); setView("chat"); }} />`}
         ${view === "chat" && selectedAgent && html`<${ChatView} agent=${selectedAgent} onRefresh=${refreshAgents} />`}
+        ${view === "jobs" && html`<${JobsView} agents=${agents} />`}
         ${view === "list" && html`<${EmptyState} />`}
       </main>
     </div>
@@ -145,6 +157,192 @@ function EmptyState() {
       <p style=${{ fontSize: "0.8rem", marginTop: "0.5rem", color: "var(--text-dimmer)" }}>
         Orchestral connects to A2A agents via OIDC and lets you message them
       </p>
+    </div>
+  `;
+}
+
+const JOB_STATUS_LABEL: Record<string, string> = {
+  queued: "Queued",
+  provisioning: "Provisioning container…",
+  cloning: "Cloning repo…",
+  running: "Bot is working…",
+  patching: "Applying patch…",
+  opening_pr: "Opening PR…",
+  done: "Done",
+  failed: "Failed",
+};
+
+function JobsView({ agents }: any) {
+  const [github, setGithub] = useState<any>(null);
+  const [repos, setRepos] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [agentId, setAgentId] = useState("");
+  const [repo, setRepo] = useState("");
+  const [instruction, setInstruction] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const connectedAgents = (agents || []).filter((a: any) => a.auth_state === "connected");
+
+  const refreshJobs = useCallback(async () => {
+    try {
+      const data = await api("/jobs");
+      setJobs(data.jobs || []);
+    } catch (e) {
+      console.error("Failed to load jobs:", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const status = await api("/github/status");
+        setGithub(status);
+        if (status.connected) {
+          const data = await api("/github/repos");
+          setRepos(data.repos || []);
+        }
+      } catch (e: any) {
+        setError(e.message);
+      }
+      await refreshJobs();
+    })();
+  }, []);
+
+  // Poll for job updates while any job is in-flight
+  useEffect(() => {
+    const active = jobs.some(j => !["done", "failed"].includes(j.status));
+    if (!active) return;
+    const t = setInterval(refreshJobs, 3000);
+    return () => clearInterval(t);
+  }, [jobs, refreshJobs]);
+
+  async function handleSubmit(e?: any) {
+    e?.preventDefault();
+    if (!agentId || !repo || !instruction.trim() || submitting) return;
+    setSubmitting(true);
+    setError("");
+    try {
+      const data = await api("/jobs", {
+        method: "POST",
+        body: JSON.stringify({ agent_id: agentId, repo, instruction: instruction.trim() }),
+      });
+      setJobs(prev => [data.job, ...prev]);
+      setInstruction("");
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return html`
+    <div style=${{ maxWidth: "760px", margin: "0 auto", padding: "2rem", overflowY: "auto", flex: 1 }}>
+      <h2 style=${{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.25rem" }}>🚀 Jobs</h2>
+      <p style=${{ fontSize: "0.8rem", color: "var(--text-dim)", marginBottom: "1.5rem" }}>
+        Pick a repo and a bot, describe what to do, and orchestral spins up a fresh container,
+        asks the bot for a patch, and opens a pull request.
+      </p>
+
+      ${!github?.configured && html`
+        <div style=${{ padding: "0.9rem", background: "rgba(245,158,11,0.1)", border: "1px solid var(--warning)", borderRadius: "var(--radius)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>
+          GitHub isn't configured on the server yet. Set <code>GITHUB_CLIENT_ID</code> / <code>GITHUB_CLIENT_SECRET</code>
+          from a GitHub OAuth App (callback: <code>/api/github/callback</code>) to enable jobs.
+        </div>
+      `}
+
+      ${github?.configured && !github?.connected && html`
+        <div style=${{ padding: "0.9rem", background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius)", marginBottom: "1.5rem" }}>
+          <p style=${{ fontSize: "0.85rem", marginBottom: "0.75rem" }}>Connect GitHub to pick a repo and open PRs.</p>
+          <a href="/api/github/login" style=${{
+            display: "inline-block", padding: "0.5rem 1rem", borderRadius: "var(--radius)",
+            background: "var(--accent)", color: "white", textDecoration: "none", fontWeight: 600, fontSize: "0.85rem",
+          }}>
+            🔗 Connect GitHub
+          </a>
+        </div>
+      `}
+
+      ${github?.connected && html`
+        <div style=${{ fontSize: "0.8rem", color: "var(--success)", marginBottom: "1rem" }}>
+          ● Connected to GitHub as ${github.login}
+        </div>
+
+        <form onSubmit=${handleSubmit} style=${{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
+          <div>
+            <label style=${{ display: "block", fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "0.3rem" }}>Repository</label>
+            <select value=${repo} onChange=${(e: any) => setRepo(e.target.value)} style=${{ ...inputStyle }}>
+              <option value="">Select a repo…</option>
+              ${repos.map((r: any) => html`<option key=${r.full_name} value=${r.full_name}>${r.full_name}${r.private ? " 🔒" : ""}</option>`)}
+            </select>
+          </div>
+
+          <div>
+            <label style=${{ display: "block", fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "0.3rem" }}>Bot</label>
+            <select value=${agentId} onChange=${(e: any) => setAgentId(e.target.value)} style=${{ ...inputStyle }}>
+              <option value="">Select a bot…</option>
+              ${connectedAgents.map((a: any) => html`<option key=${a.id} value=${a.id}>${a.name}</option>`)}
+            </select>
+            ${connectedAgents.length === 0 && html`<p style=${{ fontSize: "0.7rem", color: "var(--text-dimmer)", marginTop: "0.3rem" }}>No connected bots yet — add one first.</p>`}
+          </div>
+
+          <div>
+            <label style=${{ display: "block", fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "0.3rem" }}>Command</label>
+            <textarea
+              value=${instruction}
+              onInput=${(e: any) => setInstruction(e.target.value)}
+              placeholder="e.g. Fix the off-by-one error in the pagination helper"
+              rows="3"
+              style=${{ ...inputStyle, resize: "vertical", fontFamily: "inherit" }}
+            />
+          </div>
+
+          ${error && html`<div style=${{ color: "var(--danger)", fontSize: "0.8rem" }}>${error}</div>`}
+
+          <button type="submit" disabled=${!agentId || !repo || !instruction.trim() || submitting} style=${{
+            alignSelf: "flex-start", padding: "0.6rem 1.5rem", borderRadius: "var(--radius)",
+            background: "var(--accent)", color: "white", border: "none", cursor: "pointer",
+            fontWeight: 600, fontSize: "0.9rem",
+            opacity: (!agentId || !repo || !instruction.trim() || submitting) ? 0.5 : 1,
+          }}>
+            ${submitting ? "Starting…" : "▶ Run Job"}
+          </button>
+        </form>
+      `}
+
+      <h3 style=${{ fontSize: "0.95rem", fontWeight: 700, marginBottom: "0.75rem" }}>Recent jobs</h3>
+      ${jobs.length === 0 && html`<p style=${{ fontSize: "0.8rem", color: "var(--text-dimmer)" }}>No jobs yet.</p>`}
+      <div style=${{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        ${jobs.map((job: any) => html`
+          <div key=${job.id} style=${{ border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "0.75rem 1rem", background: "var(--bg-card)" }}>
+            <div style=${{ display: "flex", alignItems: "center", gap: "0.6rem", cursor: "pointer" }}
+                 onClick=${() => setExpanded(expanded === job.id ? null : job.id)}>
+              <span style=${{
+                fontSize: "0.7rem", fontWeight: 700, padding: "0.15rem 0.5rem", borderRadius: "999px",
+                background: job.status === "done" ? "rgba(34,197,94,0.15)" : job.status === "failed" ? "rgba(239,68,68,0.15)" : "rgba(99,102,241,0.15)",
+                color: job.status === "done" ? "var(--success)" : job.status === "failed" ? "var(--danger)" : "var(--accent)",
+              }}>
+                ${JOB_STATUS_LABEL[job.status] || job.status}
+              </span>
+              <span style=${{ fontSize: "0.85rem", fontWeight: 600, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                ${job.repo}: ${job.instruction}
+              </span>
+              ${job.pr_url && html`
+                <a href=${job.pr_url} target="_blank" onClick=${(e: any) => e.stopPropagation()} style=${{ fontSize: "0.75rem", color: "var(--accent)" }}>
+                  View PR →
+                </a>
+              `}
+            </div>
+            ${expanded === job.id && html`
+              <pre style=${{
+                marginTop: "0.75rem", padding: "0.75rem", background: "var(--bg)", borderRadius: "8px",
+                fontSize: "0.7rem", color: "var(--text-dim)", whiteSpace: "pre-wrap", maxHeight: "300px", overflowY: "auto",
+              }}>${job.log || "(no log yet)"}${job.error ? `\n\nError: ${job.error}` : ""}</pre>
+            `}
+          </div>
+        `)}
+      </div>
     </div>
   `;
 }

@@ -114,6 +114,36 @@ The `think` agent at `think.latha.org` has been updated to serve an A2A Agent Ca
 5. Click "Connect via OIDC" — you'll be redirected to Pocket ID to authenticate
 6. After auth, you can message the Think agent via A2A
 
+### 6. Jobs — bot + repo + instruction → PR
+
+Jobs let you pick a repo and a connected bot, describe a task, and orchestral
+will spin up a fresh [boxd](https://boxd.sh) container, clone the repo into
+it, ask the bot for a patch, apply it, push a branch, and open a pull
+request — no local setup needed per run.
+
+Requirements:
+
+1. **`boxd` CLI** installed and authenticated on the machine running
+   orchestral (it shells out to `boxd machine new/exec/cp`). This means
+   orchestral itself should run on a boxd machine, or wherever `boxd auth`
+   is already logged in.
+2. **A GitHub OAuth App** — create one at
+   [github.com/settings/developers](https://github.com/settings/developers)
+   with callback URL `${ORCHESTRAL_URL}/api/github/callback`, then set:
+   ```sh
+   export GITHUB_CLIENT_ID="..."
+   export GITHUB_CLIENT_SECRET="..."
+   ```
+3. In the orchestral UI, open **🚀 Jobs**, click **Connect GitHub**, pick a
+   repo and a connected bot, describe the task, and click **Run Job**.
+
+The bot is asked (via a normal A2A text message) to reply with a unified
+diff implementing the instruction; orchestral applies that diff inside the
+container and opens the PR with `gh pr create`. This works best with bots
+that are good at returning clean diffs from a file listing + instruction —
+it's not a full coding-agent sandbox (the bot itself doesn't get shell
+access inside the container, only the text prompt).
+
 ## Environment Variables
 
 | Variable | Default | Description |
@@ -124,6 +154,8 @@ The `think` agent at `think.latha.org` has been updated to serve an A2A Agent Ca
 | `OIDC_CLIENT_ID` | `orchestral` | Console OIDC client ID |
 | `OIDC_CLIENT_SECRET` | (empty = dev mode) | Console OIDC client secret |
 | `SESSION_SECRET` | `orchestral-dev-secret-change-me` | HMAC key for session JWTs |
+| `GITHUB_CLIENT_ID` | (empty = jobs disabled) | GitHub OAuth App client ID |
+| `GITHUB_CLIENT_SECRET` | (empty) | GitHub OAuth App client secret |
 
 ## A2A Protocol Details
 
