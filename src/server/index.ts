@@ -20,7 +20,7 @@ import {
   createConversation, getConversation, listConversations,
   addMessage, listMessages, updateConversationContext,
   getSetting, setSetting,
-  createJob, listJobs, getJob,
+  createJob, listJobs, getJob, updateJob, appendJobLog,
   type AgentRecord,
 } from "./store.ts";
 import {
@@ -605,6 +605,7 @@ app.get("/api/github/repos", async (c) => {
   if (!token) return c.json({ error: "GitHub not connected" }, 400);
   try {
     const repos = await listGithubRepos(token);
+    console.log(`GitHub repos fetched: ${repos.length}`);
     return c.json({
       repos: repos.map(r => ({
         full_name: r.full_name, private: r.private,
@@ -612,6 +613,7 @@ app.get("/api/github/repos", async (c) => {
       })),
     });
   } catch (e) {
+    console.error("Failed to list GitHub repos:", e);
     return c.json({ error: (e as Error).message }, 502);
   }
 });
@@ -823,6 +825,16 @@ function renderErrorPage(message: string): string {
 }
 
 // ─── Start ──────────────────────────────────────────────────────────────────────
+
+// Jobs are fire-and-forget in-process promises — they don't survive a
+// restart/redeploy. Mark anything still "in flight" from a previous process
+// as failed instead of leaving it stuck forever in the UI.
+for (const job of listJobs()) {
+  if (!["done", "failed"].includes(job.status)) {
+    updateJob(job.id, { status: "failed", error: "Interrupted by server restart" });
+    appendJobLog(job.id, "✗ interrupted by server restart");
+  }
+}
 
 console.log(`🎵 Orchestral — A2A Agent Orchestration Console`);
 console.log(`   → http://localhost:${PORT}`);
