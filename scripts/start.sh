@@ -9,9 +9,6 @@ set -e
 
 export PATH="$HOME/.local/bin:$PATH"
 
-if ! command -v boxd >/dev/null 2>&1; then
-  echo "boxd CLI not found — installing…"
-  curl -fsSL https://boxd.sh/downloads/install.sh | sh
-fi
+bun run "$(dirname "$0")/ensure-boxd.ts"
 
 exec bun run src/server/index.ts
