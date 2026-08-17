@@ -198,6 +198,74 @@ async function boxdStop(name: string): Promise<void> {
   await runCmd(["boxd", "machine", "stop", name], { timeoutMs: 60_000 }).catch(() => {});
 }
 
+// ─── Repo context gathering ─────────────────────────────────────────────────
+
+// Extensions/paths not worth sending as "source" — binaries the bot can't
+// usefully read, and generated lockfiles that are huge and never hand-edited.
+const BINARY_EXT_RE = /\.(png|jpe?g|gif|ico|svg|ttf|otf|woff2?|webp|pdf|zip|gz|tar|mp3|mp4|wasm|bin)$/i;
+const SKIP_NAME_RE = /(^|\/)(Cargo\.lock|package-lock\.json|bun\.lock|yarn\.lock|pnpm-lock\.yaml|go\.sum)$/;
+
+const MAX_CONTEXT_FILES = 60; // cap on how many files we even attempt to fetch
+const MAX_PER_FILE_CHARS = 6_000; // per-file truncation while fetching
+const MAX_TOTAL_CONTEXT_CHARS = 60_000; // budget for what actually goes in the prompt
+
+/**
+ * Fetch contents for a budgeted subset of the repo's text files and format
+ * them for the prompt. A bare file listing isn't enough for a bot to write a
+ * real diff — it can only guess at file contents, which produced a "here's
+ * what I'd need" reply instead of a patch in practice. Filenames come from
+ * `git ls-files` inside the *bot's own* target repo, so they're written to a
+ * file and read via a `while read` loop inside the container rather than
+ * interpolated into a shell command — avoids shell-injection risk from a
+ * repo with adversarial or merely space-containing filenames.
+ */
+async function gatherFileContents(
+  machineName: string,
+  jobId: string,
+  files: string[]
+): Promise<{ block: string; includedCount: number; totalCount: number }> {
+  const candidates = files
+    .filter((f) => !BINARY_EXT_RE.test(f) && !SKIP_NAME_RE.test(f))
+    .slice(0, MAX_CONTEXT_FILES);
+
+  if (candidates.length === 0) {
+    return { block: "(no readable source files found)", includedCount: 0, totalCount: files.length };
+  }
+
+  const localListPath = `/tmp/orchestral-job-${jobId}-files.txt`;
+  await Bun.write(localListPath, candidates.join("\n") + "\n");
+  await boxdCp(localListPath, "/tmp/files.txt", machineName);
+
+  const marker = "===ORCHESTRAL_FILE===";
+  const dumpScript = `cd repo && while IFS= read -r f; do
+    [ -f "$f" ] || continue
+    echo "${marker}$f"
+    head -c ${MAX_PER_FILE_CHARS} -- "$f"
+    echo
+  done < /tmp/files.txt`;
+  const dump = await boxdExec(machineName, dumpScript, {}, jobId);
+
+  const parts = dump.split(marker).filter(Boolean);
+  let budget = MAX_TOTAL_CONTEXT_CHARS;
+  let included = 0;
+  const sections: string[] = [];
+  for (const part of parts) {
+    const nl = part.indexOf("\n");
+    if (nl < 0) continue;
+    const path = part.slice(0, nl);
+    const content = part.slice(nl + 1);
+    if (budget <= 0) break;
+    const chunk = `### ${path}\n\`\`\`\n${content.trim()}\n\`\`\`\n`;
+    sections.push(chunk);
+    budget -= chunk.length;
+    included++;
+  }
+
+  const omitted = files.length - included;
+  const suffix = omitted > 0 ? `\n(…${omitted} more files omitted for size — ask if one of them is needed)` : "";
+  return { block: sections.join("\n") + suffix, includedCount: included, totalCount: files.length };
+}
+
 // ─── Patch extraction ───────────────────────────────────────────────────────
 
 /** Pull a unified diff out of an agent's (possibly chatty, markdown-wrapped) reply. */
@@ -257,6 +325,14 @@ export async function runJob(jobId: string): Promise<void> {
 
     log(jobId, `→ gathering repo context`);
     const tree = await boxdExec(machineName, `cd repo && git ls-files | head -300`, {}, jobId);
+    const files = tree.trim().split("\n").filter(Boolean);
+
+    // A bare file listing isn't enough for a bot to write a real diff — it
+    // can only guess at contents, which in practice produced "I don't have
+    // the repo files, can you paste them?" instead of a patch. Fetch actual
+    // contents for a budgeted subset of files instead.
+    const { block: fileContents, includedCount, totalCount } = await gatherFileContents(machineName, jobId, files);
+    log(jobId, `→ sending contents of ${includedCount}/${totalCount} files to the bot`);
 
     log(jobId, `→ asking bot "${agent.name}" for a patch`);
     updateJob(jobId, { status: "running" });
@@ -273,6 +349,9 @@ export async function runJob(jobId: string): Promise<void> {
       ``,
       `Repo file listing:`,
       tree.trim(),
+      ``,
+      `Contents of the repo's files (below) — use these, don't guess:`,
+      fileContents,
       ``,
       `Reply with ONLY a unified git diff (output of \`git diff\`) that implements the task.`,
       `Do not include explanation — just the diff, optionally inside a \`\`\`diff code block.`,
