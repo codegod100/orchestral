@@ -21,7 +21,7 @@ async function api(path: string, opts?: RequestInit) {
 function App() {
   const [agents, setAgents] = useState<any[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
-  const [view, setView] = useState<"list" | "chat" | "add" | "jobs" | "about">("list");
+  const [view, setView] = useState<"list" | "chat" | "add" | "jobs">("list");
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,6 +33,23 @@ function App() {
       console.error("Failed to load agents:", e);
     }
   }, []);
+
+  const handleDeleteAgent = useCallback(async (agent: any) => {
+    if (!confirm(`Remove "${agent.name}"? This deletes its conversation history too.`)) return;
+    try {
+      await api(`/agents/${agent.id}`, { method: "DELETE" });
+      setSelectedAgent((prev: any) => {
+        if (prev?.id === agent.id) {
+          setView("list");
+          return null;
+        }
+        return prev;
+      });
+      await refreshAgents();
+    } catch (e: any) {
+      alert(`Failed to remove agent: ${e.message}`);
+    }
+  }, [refreshAgents]);
 
   useEffect(() => {
     (async () => {
@@ -92,22 +109,11 @@ function App() {
           >
             🚀 Jobs
           </button>
-          <button
-            onClick=${() => { setView("about"); setSelectedAgent(null); }}
-            style=${{
-              width: "100%", padding: "0.6rem 0.75rem", borderRadius: "var(--radius)",
-              background: view === "about" ? "var(--bg-hover)" : "transparent",
-              border: "1px solid var(--border)", color: "var(--text)", cursor: "pointer",
-              fontWeight: 600, fontSize: "0.85rem",
-            }}
-          >
-            ℹ️ About
-          </button>
         </div>
 
         <div style=${{ flex: 1, overflowY: "auto", padding: "0 0.75rem" }}>
           ${agents.map(agent => html`
-            <button
+            <div
               key=${agent.id}
               onClick=${() => { setSelectedAgent(agent); setView("chat"); }}
               style=${{
@@ -132,7 +138,18 @@ function App() {
                   ${agent.auth_state === "connected" ? "● Connected" : "○ Needs auth"}
                 </div>
               </div>
-            </button>
+              <button
+                onClick=${(e: any) => { e.stopPropagation(); handleDeleteAgent(agent); }}
+                title="Remove agent"
+                style=${{
+                  background: "transparent", border: "none", color: "var(--text-dim)",
+                  cursor: "pointer", fontSize: "0.9rem", padding: "0.25rem", lineHeight: 1,
+                  flexShrink: 0, borderRadius: "var(--radius)",
+                }}
+              >
+                🗑
+              </button>
+            </div>
           `)}
         </div>
 
@@ -152,38 +169,10 @@ function App() {
       ${/* Main content */ ""}
       <main style=${{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
         ${view === "add" && html`<${AddAgent} onAdded=${(a) => { refreshAgents(); setSelectedAgent(a); setView("chat"); }} />`}
-        ${view === "chat" && selectedAgent && html`<${ChatView} agent=${selectedAgent} onRefresh=${refreshAgents} />`}
+        ${view === "chat" && selectedAgent && html`<${ChatView} agent=${selectedAgent} onRefresh=${refreshAgents} onDelete=${() => handleDeleteAgent(selectedAgent)} />`}
         ${view === "jobs" && html`<${JobsView} agents=${agents} />`}
-        ${view === "about" && html`<${AboutView} />`}
         ${view === "list" && html`<${EmptyState} />`}
       </main>
-    </div>
-  `;
-}
-
-function AboutView() {
-  return html`
-    <div style=${{ maxWidth: "680px", margin: "0 auto", padding: "2.5rem 2rem", overflowY: "auto", flex: 1 }}>
-      <div style=${{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
-        <span style=${{ fontSize: "2.25rem" }}>🎵</span>
-        <div>
-          <h2 style=${{ fontSize: "1.35rem", fontWeight: 700 }}>About Orchestral</h2>
-          <p style=${{ fontSize: "0.8rem", color: "var(--text-dim)", marginTop: "0.2rem" }}>A2A Agent Console</p>
-        </div>
-      </div>
-      <div style=${{ display: "flex", flexDirection: "column", gap: "1rem", color: "var(--text-dim)", fontSize: "0.9rem", lineHeight: 1.6 }}>
-        <p>Orchestral is a console for discovering, authenticating, and messaging agents that support the Agent2Agent (A2A) protocol.</p>
-        <div style=${{ padding: "1rem", background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius)" }}>
-          <h3 style=${{ color: "var(--text)", fontSize: "0.95rem", marginBottom: "0.5rem" }}>What you can do</h3>
-          <ul style=${{ paddingLeft: "1.2rem" }}>
-            <li>Discover agents from their Agent Card</li>
-            <li>Connect securely with OIDC</li>
-            <li>Chat with agents over A2A, including streaming responses</li>
-            <li>Run coding jobs and open pull requests from GitHub</li>
-          </ul>
-        </div>
-        <p style=${{ fontSize: "0.8rem" }}>Built for interoperable, conversational AI workflows.</p>
-      </div>
     </div>
   `;
 }
@@ -466,7 +455,7 @@ function AddAgent({ onAdded }: any) {
   `;
 }
 
-function ChatView({ agent, onRefresh }: any) {
+function ChatView({ agent, onRefresh, onDelete }: any) {
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -719,6 +708,17 @@ function ChatView({ agent, onRefresh }: any) {
         }}>
           ${needsAuth ? "Needs Auth" : "Connected"}
         </div>
+        <button
+          onClick=${onDelete}
+          title="Remove this agent"
+          style=${{
+            padding: "0.4rem 0.75rem", borderRadius: "var(--radius)", background: "var(--bg-card)",
+            border: "1px solid var(--border)", color: "var(--text-dim)", cursor: "pointer",
+            fontWeight: 600, fontSize: "0.75rem",
+          }}
+        >
+          🗑 Remove
+        </button>
       </header>
 
       ${needsAuth && html`
