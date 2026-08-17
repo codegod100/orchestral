@@ -22,6 +22,7 @@
 
 import { getAgent, getJob, updateJob, appendJobLog, getSetting, type JobRecord } from "./store.ts";
 import { sendMessage, extractText } from "./a2a-client.ts";
+import { ensureFreshToken } from "./oidc.ts";
 
 const JOB_TIMEOUT_MS = 10 * 60 * 1000; // 10 min per boxd exec step
 
@@ -259,7 +260,13 @@ export async function runJob(jobId: string): Promise<void> {
 
     log(jobId, `→ asking bot "${agent.name}" for a patch`);
     updateJob(jobId, { status: "running" });
-    const card = JSON.parse(agent.agent_card_json);
+    // Chat sends already refresh an expiring OIDC token before use (see
+    // index.ts's ensureFreshToken calls) — jobs.ts didn't, so a bot whose
+    // token had simply expired since it was last connected surfaced as a
+    // job failure ("Authentication required — token may be expired") right
+    // at this step instead of transparently refreshing like chat does.
+    const freshAgent = await ensureFreshToken(agent);
+    const card = JSON.parse(freshAgent.agent_card_json);
     const prompt = [
       `You are working inside a fresh clone of the GitHub repo ${job.repo}.`,
       `Task: ${job.instruction}`,
@@ -271,7 +278,7 @@ export async function runJob(jobId: string): Promise<void> {
       `Do not include explanation — just the diff, optionally inside a \`\`\`diff code block.`,
     ].join("\n");
 
-    const response = await sendMessage(card.url, agent.access_token, {
+    const response = await sendMessage(card.url, freshAgent.access_token, {
       message: {
         role: "ROLE_USER",
         parts: [{ kind: "text", text: prompt }],

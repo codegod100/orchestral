@@ -4,6 +4,7 @@
  */
 
 import { jwtVerify, createRemoteJWKSet } from "jose";
+import { updateAgent, type AgentRecord } from "./store.ts";
 
 // ─── PKCE ──────────────────────────────────────────────────────────────────
 
@@ -297,4 +298,39 @@ export async function pollDeviceToken(opts: {
     expires_in: body.expires_in,
     token_type: body.token_type,
   };
+}
+
+// ─── Token refresh ───────────────────────────────────────────────────────────
+
+/**
+ * Refresh an agent's OIDC access token if it's expired (or expiring within a
+ * minute) and a refresh token is available. Shared by both the chat-send
+ * routes and jobs.ts's bot-messaging step — jobs.ts previously used
+ * agent.access_token directly without this, so an expired token surfaced as
+ * a job failure ("Authentication required — token may be expired") on the
+ * bot-messaging step instead of transparently refreshing like chat already
+ * does.
+ */
+export async function ensureFreshToken(agent: AgentRecord): Promise<AgentRecord> {
+  if (!agent.token_expires_at || !agent.refresh_token) return agent;
+  if (agent.token_expires_at > Date.now() + 60_000) return agent;
+
+  try {
+    const discovery = await discoverOIDC(agent.oidc_issuer!);
+    const tokens = await refreshToken({
+      tokenEndpoint: discovery.token_endpoint,
+      refreshToken: agent.refresh_token,
+      clientId: agent.oidc_client_id!,
+      clientSecret: agent.oidc_client_secret!,
+    });
+
+    const updated = updateAgent(agent.id, {
+      access_token: tokens.access_token ?? agent.access_token,
+      refresh_token: tokens.refresh_token ?? agent.refresh_token,
+      token_expires_at: Date.now() + (tokens.expires_in ?? 3600) * 1000,
+    });
+    return updated ?? agent;
+  } catch {
+    return agent;
+  }
 }

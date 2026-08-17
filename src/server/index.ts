@@ -26,7 +26,7 @@ import {
 import {
   generatePkce, randomString, discoverOIDC, buildAuthorizeUrl,
   exchangeCode, refreshToken, createSession, verifySession,
-  startDeviceCode, pollDeviceToken,
+  startDeviceCode, pollDeviceToken, ensureFreshToken,
   type OIDCDiscovery,
 } from "./oidc.ts";
 import {
@@ -522,31 +522,6 @@ app.get("/api/agent/oidc/callback", async (c) => {
 
   return c.redirect(flow.return_url || "/");
 });
-
-// Refresh agent token (if expired)
-async function ensureFreshToken(agent: AgentRecord): Promise<AgentRecord> {
-  if (!agent.token_expires_at || !agent.refresh_token) return agent;
-  if (agent.token_expires_at > Date.now() + 60_000) return agent;
-
-  try {
-    const discovery = await discoverOIDC(agent.oidc_issuer!);
-    const tokens = await refreshToken({
-      tokenEndpoint: discovery.token_endpoint,
-      refreshToken: agent.refresh_token,
-      clientId: agent.oidc_client_id!,
-      clientSecret: agent.oidc_client_secret!,
-    });
-
-    const updated = updateAgent(agent.id, {
-      access_token: tokens.access_token ?? agent.access_token,
-      refresh_token: tokens.refresh_token ?? agent.refresh_token,
-      token_expires_at: Date.now() + (tokens.expires_in ?? 3600) * 1000,
-    });
-    return updated ?? agent;
-  } catch {
-    return agent;
-  }
-}
 
 // ─── GitHub connection (for repo picking + opening PRs from jobs) ──────────────
 
