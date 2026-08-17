@@ -209,6 +209,22 @@ const MAX_CONTEXT_FILES = 60; // cap on how many files we even attempt to fetch
 const MAX_PER_FILE_CHARS = 6_000; // per-file truncation while fetching
 const MAX_TOTAL_CONTEXT_CHARS = 60_000; // budget for what actually goes in the prompt
 
+const STOPWORDS = new Set([
+  "the", "a", "an", "to", "of", "in", "on", "for", "and", "or", "is", "are", "be",
+  "this", "that", "with", "please", "make", "create", "implement", "add", "update",
+  "fix", "change", "new", "it", "its", "from", "as", "by", "at", "into", "also",
+  "should", "would", "could", "will", "just", "some", "there",
+]);
+
+/** Pull content words out of the instruction to grep large files for relevant sections. */
+function extractKeywords(instruction: string): string[] {
+  const words = instruction
+    .toLowerCase()
+    .split(/[^a-z0-9_]+/)
+    .filter((w) => w.length >= 3 && !STOPWORDS.has(w));
+  return [...new Set(words)].slice(0, 20);
+}
+
 /**
  * Fetch contents for a budgeted subset of the repo's text files and format
  * them for the prompt. A bare file listing isn't enough for a bot to write a
@@ -218,11 +234,20 @@ const MAX_TOTAL_CONTEXT_CHARS = 60_000; // budget for what actually goes in the 
  * file and read via a `while read` loop inside the container rather than
  * interpolated into a shell command — avoids shell-injection risk from a
  * repo with adversarial or merely space-containing filenames.
+ *
+ * Files over the per-file cap aren't just head-truncated (which lands
+ * wherever byte 6000 happens to fall — often mid-function, nowhere near
+ * anything relevant) — they're grepped for the instruction's keywords with
+ * context instead, so a huge file still yields a useful, on-topic excerpt.
+ * Verified against a real 156KB file: keyword grep landed exactly in the
+ * toolbar/menu section, right where a new UI element belongs. Falls back to
+ * a plain head truncation (clearly labeled) if no keyword matches at all.
  */
 async function gatherFileContents(
   machineName: string,
   jobId: string,
-  files: string[]
+  files: string[],
+  instruction: string
 ): Promise<{ block: string; includedCount: number; totalCount: number }> {
   const candidates = files
     .filter((f) => !BINARY_EXT_RE.test(f) && !SKIP_NAME_RE.test(f))
@@ -236,11 +261,31 @@ async function gatherFileContents(
   await Bun.write(localListPath, candidates.join("\n") + "\n");
   await boxdCp(localListPath, "/tmp/files.txt", machineName);
 
+  const keywords = extractKeywords(instruction);
+  // Written to a file and read via `grep -f` (fixed-string matching) rather
+  // than interpolated into the script, for the same shell-injection reasons
+  // as the file list above — keywords ultimately come from user input.
+  const localKeywordsPath = `/tmp/orchestral-job-${jobId}-keywords.txt`;
+  await Bun.write(localKeywordsPath, keywords.join("\n") + "\n");
+  await boxdCp(localKeywordsPath, "/tmp/keywords.txt", machineName);
+
   const marker = "===ORCHESTRAL_FILE===";
   const dumpScript = `cd repo && while IFS= read -r f; do
     [ -f "$f" ] || continue
     echo "${marker}$f"
-    head -c ${MAX_PER_FILE_CHARS} -- "$f"
+    size=$(wc -c < "$f" 2>/dev/null || echo 0)
+    if [ "$size" -le ${MAX_PER_FILE_CHARS} ]; then
+      head -c ${MAX_PER_FILE_CHARS} -- "$f"
+    else
+      excerpt=$(grep -inF -f /tmp/keywords.txt -B 5 -A 15 -- "$f" 2>/dev/null | head -c ${MAX_PER_FILE_CHARS})
+      if [ -n "$excerpt" ]; then
+        echo "# (large file, $size bytes — showing keyword-matched excerpts with surrounding context, not the full file)"
+        printf '%s\\n' "$excerpt"
+      else
+        echo "# (large file, $size bytes — no keyword match found; showing only the first ${MAX_PER_FILE_CHARS} bytes)"
+        head -c ${MAX_PER_FILE_CHARS} -- "$f"
+      fi
+    fi
     echo
   done < /tmp/files.txt`;
   const dump = await boxdExec(machineName, dumpScript, {}, jobId);
@@ -331,7 +376,7 @@ export async function runJob(jobId: string): Promise<void> {
     // can only guess at contents, which in practice produced "I don't have
     // the repo files, can you paste them?" instead of a patch. Fetch actual
     // contents for a budgeted subset of files instead.
-    const { block: fileContents, includedCount, totalCount } = await gatherFileContents(machineName, jobId, files);
+    const { block: fileContents, includedCount, totalCount } = await gatherFileContents(machineName, jobId, files, job.instruction);
     log(jobId, `→ sending contents of ${includedCount}/${totalCount} files to the bot`);
 
     log(jobId, `→ asking bot "${agent.name}" for a patch`);
