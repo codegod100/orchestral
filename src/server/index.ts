@@ -184,6 +184,37 @@ app.get("/api/debug/boxd-net", async (c) => {
     result.https_fetch = { ok: false, error: (e as Error).message };
   }
 
+  // The boxd CLI talks gRPC (tonic/h2), not plain HTTP/1.1 — a passing plain
+  // fetch() above doesn't prove HTTP/2 works. Some proxies/NATs pass HTTP/1.1
+  // through fine but mishandle long-lived HTTP/2 (h2) connections (bad ALPN
+  // support, silently dropping idle streams, etc), which would hang a gRPC
+  // client indefinitely while looking completely fine to a plain fetch.
+  try {
+    const http2 = await import("node:http2");
+    const start = Date.now();
+    const h2result = await new Promise<{ ok: boolean; alpn?: string; ms: number; error?: string }>((resolve) => {
+      const session = http2.connect("https://boxd.sh", { settings: { enablePush: false } });
+      const timer = setTimeout(() => {
+        session.destroy();
+        resolve({ ok: false, ms: Date.now() - start, error: "timeout" });
+      }, 8000);
+      session.on("connect", () => {
+        clearTimeout(timer);
+        const alpn = (session.socket as any)?.alpnProtocol ?? undefined;
+        const ms = Date.now() - start;
+        session.close();
+        resolve({ ok: true, alpn, ms });
+      });
+      session.on("error", (e) => {
+        clearTimeout(timer);
+        resolve({ ok: false, ms: Date.now() - start, error: (e as Error).message });
+      });
+    });
+    result.http2_connect = h2result;
+  } catch (e) {
+    result.http2_connect = { ok: false, error: (e as Error).message };
+  }
+
   return c.json(result);
 });
 
