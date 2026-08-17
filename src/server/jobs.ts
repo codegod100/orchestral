@@ -100,18 +100,45 @@ async function runCmd(
 }
 
 /**
+ * Retry a flaky, side-effect-free check a couple of times before giving up.
+ * Seen in prod: `boxd auth` — a cheap call that's normally sub-second —
+ * timing out on the very first boxd invocation of a freshly booted
+ * container, while later calls (or the same call moments later) succeed.
+ * That's the signature of a transient DNS/connection hiccup rather than a
+ * real outage, so a couple of quick retries clear it without masking a
+ * genuine, persistent failure (a bad token still fails all 3 attempts).
+ */
+async function withRetry<T>(jobId: string, label: string, attempts: number, fn: () => Promise<T>): Promise<T> {
+  let lastErr: Error | undefined;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e as Error;
+      if (i < attempts) {
+        log(jobId, `⚠ ${label} attempt ${i}/${attempts} failed (${lastErr.message}) — retrying`);
+        await new Promise((r) => setTimeout(r, 2_000));
+      }
+    }
+  }
+  throw lastErr;
+}
+
+/**
  * Verify boxd is authenticated before committing to a multi-minute provision
  * wait. An unauthenticated CLI doesn't fail fast on `machine new` — it hangs
  * trying a browser device-auth flow that can never complete headless, so
  * without this check a bad/missing token just looks like a slow timeout.
  */
-async function boxdCheckAuth(): Promise<void> {
-  const r = await runCmd(["boxd", "auth"], { timeoutMs: 15_000 }).catch((e) => {
-    throw new Error(`boxd auth check failed: ${(e as Error).message} — is BOXD_TOKEN set?`);
+async function boxdCheckAuth(jobId: string): Promise<void> {
+  await withRetry(jobId, "boxd auth check", 3, async () => {
+    const r = await runCmd(["boxd", "auth"], { timeoutMs: 20_000 }).catch((e) => {
+      throw new Error(`boxd auth check failed: ${(e as Error).message} — is BOXD_TOKEN set?`);
+    });
+    if (r.code !== 0) {
+      throw new Error(`boxd is not authenticated (set BOXD_TOKEN): ${r.stderr || r.stdout}`);
+    }
   });
-  if (r.code !== 0) {
-    throw new Error(`boxd is not authenticated (set BOXD_TOKEN): ${r.stderr || r.stdout}`);
-  }
 }
 
 /**
@@ -122,15 +149,17 @@ async function boxdCheckAuth(): Promise<void> {
  * `machine new` hangs indefinitely). This narrows a mystery 3-minute timeout
  * down to "auth is fine but the network to boxd is broken" immediately.
  */
-async function boxdCheckReachable(): Promise<void> {
-  const r = await runCmd(["boxd", "machine", "list", "--json"], { timeoutMs: 20_000 }).catch((e) => {
-    throw new Error(
-      `boxd API unreachable from this host: ${(e as Error).message} — likely an egress/DNS/firewall issue, not an auth problem`
-    );
+async function boxdCheckReachable(jobId: string): Promise<void> {
+  await withRetry(jobId, "boxd reachability check", 3, async () => {
+    const r = await runCmd(["boxd", "machine", "list", "--json"], { timeoutMs: 20_000 }).catch((e) => {
+      throw new Error(
+        `boxd API unreachable from this host: ${(e as Error).message} — likely an egress/DNS/firewall issue, not an auth problem`
+      );
+    });
+    if (r.code !== 0) {
+      throw new Error(`boxd API call failed: ${r.stderr || r.stdout}`);
+    }
   });
-  if (r.code !== 0) {
-    throw new Error(`boxd API call failed: ${r.stderr || r.stdout}`);
-  }
 }
 
 async function boxdNew(name: string, jobId: string): Promise<void> {
@@ -198,8 +227,8 @@ export async function runJob(jobId: string): Promise<void> {
   updateJob(jobId, { status: "provisioning", machine_name: machineName, branch });
 
   try {
-    await boxdCheckAuth();
-    await boxdCheckReachable();
+    await boxdCheckAuth(jobId);
+    await boxdCheckReachable(jobId);
 
     log(jobId, `→ provisioning boxd machine ${machineName}`);
     await boxdNew(machineName, jobId);
