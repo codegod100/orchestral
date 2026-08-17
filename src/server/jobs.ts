@@ -6,6 +6,18 @@
  * Requires the `boxd` CLI on PATH and authenticated (the host running
  * orchestral needs its own boxd account), plus a GitHub token stored via the
  * GitHub OAuth flow (see github.ts).
+ *
+ * Auth: BOXD_TOKEN/API-key auth (see https://docs.boxd.sh) was found to be
+ * broken server-side for this account as of 2026-08-17 — every key tested
+ * (fresh member, fresh org, the previous production key) was rejected as
+ * invalid immediately, while an interactive session was not. Production now
+ * runs on a persisted `boxd auth login` session instead (see scripts/start.sh
+ * — XDG_CONFIG_HOME points boxd's config dir at the /data volume so the
+ * session survives redeploys). The BOXD_API_KEY->BOXD_TOKEN bridge below is
+ * kept as a fallback for whenever boxd's API-key auth is fixed upstream, but
+ * note an explicit BOXD_TOKEN always overrides a stored session — don't set
+ * BOXD_API_KEY/BOXD_TOKEN in the environment unless the key is known-good, or
+ * it'll silently take precedence over a working login.
  */
 
 import { getAgent, getJob, updateJob, appendJobLog, getSetting, type JobRecord } from "./store.ts";
@@ -13,13 +25,8 @@ import { sendMessage, extractText } from "./a2a-client.ts";
 
 const JOB_TIMEOUT_MS = 10 * 60 * 1000; // 10 min per boxd exec step
 
-// The boxd CLI only reads BOXD_TOKEN (or --token) for auth — it does NOT
-// recognize BOXD_API_KEY (that name is only for the Python/TS SDKs' Compute()
-// class). Railway's variable here has historically been named BOXD_API_KEY,
-// which left the CLI silently unauthenticated: `boxd machine new` would then
-// hang waiting on a browser device-auth flow that can never complete
-// headless, until the outer timeout killed it. Bridge the name so either
-// works, regardless of what the platform env var is actually called.
+// See the file-header note above — only bridges if a key happens to be set;
+// harmless no-op in the normal (session-based) case.
 if (!process.env.BOXD_TOKEN && process.env.BOXD_API_KEY) {
   process.env.BOXD_TOKEN = process.env.BOXD_API_KEY;
 }
