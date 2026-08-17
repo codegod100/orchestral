@@ -465,6 +465,7 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
   const [agentDetail, setAgentDetail] = useState<any>(agent);
   const [showInfo, setShowInfo] = useState(false);
   const messagesEnd = useRef<any>(null);
+  const inputEl = useRef<any>(null);
   const eventSource = useRef<AbortController | null>(null);
   // Guards against a slow/stale async fetch clobbering messages a newer
   // action already replaced — e.g. the initial conversation-history GET
@@ -539,6 +540,18 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
   useEffect(() => {
     messagesEnd.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // Re-focus the input once sending finishes. It's `disabled` while
+  // `sending` is true so the user can't queue up a second message
+  // mid-send — but a disabled input is force-blurred by the browser the
+  // instant that attribute flips on, and re-enabling it afterward doesn't
+  // restore focus on its own. Without this, every single message costs a
+  // click back into the input before the next one.
+  useEffect(() => {
+    if (!sending && !needsAuth) {
+      inputEl.current?.focus();
+    }
+  }, [sending]);
 
   async function handleSend(e?: any) {
     e?.preventDefault();
@@ -877,6 +890,7 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
       <footer style=${{ borderTop: "1px solid var(--border)", padding: "1rem 1.5rem" }}>
         <form onSubmit=${handleSend} style=${{ maxWidth: "720px", margin: "0 auto", display: "flex", gap: "0.5rem" }}>
           <input
+            ref=${inputEl}
             type="text"
             value=${input}
             onInput=${(e: any) => setInput(e.target.value)}
