@@ -392,7 +392,14 @@ export async function runJob(jobId: string): Promise<void> {
       machineName,
       `set -euo pipefail
        cd repo
-       git apply --whitespace=fix /tmp/job.patch
+       # --recount: bots hand-write unified diffs from memory rather than
+       # running an actual diff tool, and reliably get hunk-header line
+       # counts wrong (e.g. "@@ -44,12 +46,16 @@" when the hunk body
+       # actually has 14/18 lines) — git apply then desyncs and rejects the
+       # *next* hunk as "patch fragment without header". --recount tells git
+       # to derive the counts from the hunk body itself instead of trusting
+       # the bot's arithmetic; the file:line positions are still respected.
+       git apply --recount --whitespace=fix /tmp/job.patch
        git add -A
        git commit -m "${job.instruction.replace(/"/g, '\\"').slice(0, 200)}"
        git push "https://x-access-token:\${GITHUB_TOKEN}@github.com/${job.repo}.git" "${branch}"`,
