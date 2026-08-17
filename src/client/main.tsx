@@ -21,7 +21,7 @@ async function api(path: string, opts?: RequestInit) {
 function App() {
   const [agents, setAgents] = useState<any[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
-  const [view, setView] = useState<"list" | "chat" | "add" | "jobs">("list");
+  const [view, setView] = useState<"list" | "chat" | "add" | "jobs" | "about">("list");
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -92,6 +92,17 @@ function App() {
           >
             🚀 Jobs
           </button>
+          <button
+            onClick=${() => { setView("about"); setSelectedAgent(null); }}
+            style=${{
+              width: "100%", padding: "0.6rem 0.75rem", borderRadius: "var(--radius)",
+              background: view === "about" ? "var(--bg-hover)" : "transparent",
+              border: "1px solid var(--border)", color: "var(--text)", cursor: "pointer",
+              fontWeight: 600, fontSize: "0.85rem",
+            }}
+          >
+            ℹ️ About
+          </button>
         </div>
 
         <div style=${{ flex: 1, overflowY: "auto", padding: "0 0.75rem" }}>
@@ -143,8 +154,36 @@ function App() {
         ${view === "add" && html`<${AddAgent} onAdded=${(a) => { refreshAgents(); setSelectedAgent(a); setView("chat"); }} />`}
         ${view === "chat" && selectedAgent && html`<${ChatView} agent=${selectedAgent} onRefresh=${refreshAgents} />`}
         ${view === "jobs" && html`<${JobsView} agents=${agents} />`}
+        ${view === "about" && html`<${AboutView} />`}
         ${view === "list" && html`<${EmptyState} />`}
       </main>
+    </div>
+  `;
+}
+
+function AboutView() {
+  return html`
+    <div style=${{ maxWidth: "680px", margin: "0 auto", padding: "2.5rem 2rem", overflowY: "auto", flex: 1 }}>
+      <div style=${{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
+        <span style=${{ fontSize: "2.25rem" }}>🎵</span>
+        <div>
+          <h2 style=${{ fontSize: "1.35rem", fontWeight: 700 }}>About Orchestral</h2>
+          <p style=${{ fontSize: "0.8rem", color: "var(--text-dim)", marginTop: "0.2rem" }}>A2A Agent Console</p>
+        </div>
+      </div>
+      <div style=${{ display: "flex", flexDirection: "column", gap: "1rem", color: "var(--text-dim)", fontSize: "0.9rem", lineHeight: 1.6 }}>
+        <p>Orchestral is a console for discovering, authenticating, and messaging agents that support the Agent2Agent (A2A) protocol.</p>
+        <div style=${{ padding: "1rem", background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--radius)" }}>
+          <h3 style=${{ color: "var(--text)", fontSize: "0.95rem", marginBottom: "0.5rem" }}>What you can do</h3>
+          <ul style=${{ paddingLeft: "1.2rem" }}>
+            <li>Discover agents from their Agent Card</li>
+            <li>Connect securely with OIDC</li>
+            <li>Chat with agents over A2A, including streaming responses</li>
+            <li>Run coding jobs and open pull requests from GitHub</li>
+          </ul>
+        </div>
+        <p style=${{ fontSize: "0.8rem" }}>Built for interoperable, conversational AI workflows.</p>
+      </div>
     </div>
   `;
 }
