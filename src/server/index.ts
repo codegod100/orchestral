@@ -112,6 +112,7 @@ app.use("/api/*", async (c, next) => {
     path === "/api/auth/callback" ||
     path === "/api/auth/logout" ||
     path === "/api/health" ||
+    path === "/api/debug/boxd-net" ||
     path === "/api/agent/oidc/callback" ||
     path === "/api/github/callback"
   ) {
@@ -135,6 +136,56 @@ app.use("/api/*", async (c, next) => {
 // ─── Health ──────────────────────────────────────────────────────────────────
 
 app.get("/api/health", (c) => c.json({ ok: true, service: "orchestral" }));
+
+// ─── Temporary diagnostic: boxd.sh reachability ─────────────────────────────
+// boxd.sh resolves to two A records; jobs.ts's boxd-auth preflight has been
+// timing out intermittently in prod even with retries, which is consistent
+// with one of the two IPs being unreachable from Railway's network while the
+// other works. This probes both directly (DNS + raw TCP connect + HTTPS
+// fetch) from inside the actual running container so we don't have to guess.
+// Safe to remove once the underlying boxd connectivity issue is understood.
+app.get("/api/debug/boxd-net", async (c) => {
+  const dns = await import("node:dns/promises");
+  const net = await import("node:net");
+
+  const result: Record<string, unknown> = {};
+
+  try {
+    const addrs = await dns.resolve4("boxd.sh");
+    result.dns_a_records = addrs;
+
+    const tcpProbe = (ip: string) =>
+      new Promise<{ ip: string; ok: boolean; ms: number; error?: string }>((resolve) => {
+        const start = Date.now();
+        const socket = net.createConnection({ host: ip, port: 443, timeout: 5000 });
+        socket.on("connect", () => {
+          socket.destroy();
+          resolve({ ip, ok: true, ms: Date.now() - start });
+        });
+        socket.on("timeout", () => {
+          socket.destroy();
+          resolve({ ip, ok: false, ms: Date.now() - start, error: "timeout" });
+        });
+        socket.on("error", (e) => {
+          resolve({ ip, ok: false, ms: Date.now() - start, error: (e as Error).message });
+        });
+      });
+
+    result.tcp_443_probes = await Promise.all(addrs.map(tcpProbe));
+  } catch (e) {
+    result.dns_error = (e as Error).message;
+  }
+
+  try {
+    const start = Date.now();
+    const res = await fetch("https://boxd.sh/", { signal: AbortSignal.timeout(8000) });
+    result.https_fetch = { ok: true, status: res.status, ms: Date.now() - start };
+  } catch (e) {
+    result.https_fetch = { ok: false, error: (e as Error).message };
+  }
+
+  return c.json(result);
+});
 
 // ─── Console Auth (OIDC login for the orchestral console itself) ───────────────
 
