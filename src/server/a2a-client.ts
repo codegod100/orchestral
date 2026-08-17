@@ -84,6 +84,11 @@ export async function sendMessage(
   agentUrl: string,
   accessToken: string | null,
   request: SendMessageRequest,
+  // Jobs send much larger prompts (full file contents, not just a chat
+  // message) and run in the background with no one watching a spinner, so
+  // they pass a longer timeout than the default — the default stays 120s to
+  // keep interactive chat responsive if an agent hangs.
+  timeoutMs = 120_000,
 ): Promise<SendMessageResponse> {
   const url = `${agentUrl.replace(/\/$/, "")}/message:send`;
   const headers: Record<string, string> = {
@@ -98,7 +103,7 @@ export async function sendMessage(
     method: "POST",
     headers,
     body: JSON.stringify(request),
-    signal: AbortSignal.timeout(120_000),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 
   if (res.status === 401) {

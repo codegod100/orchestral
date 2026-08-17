@@ -357,14 +357,23 @@ export async function runJob(jobId: string): Promise<void> {
       `Do not include explanation — just the diff, optionally inside a \`\`\`diff code block.`,
     ].join("\n");
 
-    const response = await sendMessage(card.url, freshAgent.access_token, {
-      message: {
-        role: "ROLE_USER",
-        parts: [{ kind: "text", text: prompt }],
-        messageId: crypto.randomUUID(),
+    const response = await sendMessage(
+      card.url,
+      freshAgent.access_token,
+      {
+        message: {
+          role: "ROLE_USER",
+          parts: [{ kind: "text", text: prompt }],
+          messageId: crypto.randomUUID(),
+        },
+        configuration: { acceptedOutputModes: ["text/plain"] },
       },
-      configuration: { acceptedOutputModes: ["text/plain"] },
-    });
+      // The default 120s timeout was hit here in practice once the prompt
+      // grew to include real file contents (~60K chars) instead of just a
+      // filename listing — jobs already run for minutes and nothing is
+      // waiting on a spinner, so give the bot much more room.
+      8 * 60 * 1000
+    );
     const replyText = extractText(response);
     const patch = extractPatch(replyText);
 
