@@ -13,6 +13,17 @@ import { sendMessage, extractText } from "./a2a-client.ts";
 
 const JOB_TIMEOUT_MS = 10 * 60 * 1000; // 10 min per boxd exec step
 
+// The boxd CLI only reads BOXD_TOKEN (or --token) for auth — it does NOT
+// recognize BOXD_API_KEY (that name is only for the Python/TS SDKs' Compute()
+// class). Railway's variable here has historically been named BOXD_API_KEY,
+// which left the CLI silently unauthenticated: `boxd machine new` would then
+// hang waiting on a browser device-auth flow that can never complete
+// headless, until the outer timeout killed it. Bridge the name so either
+// works, regardless of what the platform env var is actually called.
+if (!process.env.BOXD_TOKEN && process.env.BOXD_API_KEY) {
+  process.env.BOXD_TOKEN = process.env.BOXD_API_KEY;
+}
+
 // ─── boxd helpers ────────────────────────────────────────────────────────────
 
 async function runCmd(cmd: string[], opts?: { timeoutMs?: number }): Promise<{ code: number; stdout: string; stderr: string }> {
@@ -48,6 +59,21 @@ async function runCmd(cmd: string[], opts?: { timeoutMs?: number }): Promise<{ c
     return result;
   } finally {
     clearTimeout(timeoutHandle!);
+  }
+}
+
+/**
+ * Verify boxd is authenticated before committing to a 3-minute provision
+ * wait. An unauthenticated CLI doesn't fail fast on `machine new` — it hangs
+ * trying a browser device-auth flow that can never complete headless, so
+ * without this check a bad/missing token just looks like a slow timeout.
+ */
+async function boxdCheckAuth(): Promise<void> {
+  const r = await runCmd(["boxd", "auth"], { timeoutMs: 15_000 }).catch((e) => {
+    throw new Error(`boxd auth check failed: ${(e as Error).message} — is BOXD_TOKEN set?`);
+  });
+  if (r.code !== 0) {
+    throw new Error(`boxd is not authenticated (set BOXD_TOKEN): ${r.stderr || r.stdout}`);
   }
 }
 
@@ -118,6 +144,8 @@ export async function runJob(jobId: string): Promise<void> {
   updateJob(jobId, { status: "provisioning", machine_name: machineName, branch });
 
   try {
+    await boxdCheckAuth();
+
     log(jobId, `→ provisioning boxd machine ${machineName}`);
     await boxdNew(machineName);
 
