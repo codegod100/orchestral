@@ -206,12 +206,16 @@ function JobsView({ agents }: any) {
   const [jobs, setJobs] = useState<any[]>([]);
   const [agentId, setAgentId] = useState("");
   const [repo, setRepo] = useState("");
+  const [repoSearch, setRepoSearch] = useState("");
   const [instruction, setInstruction] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
 
   const connectedAgents = (agents || []).filter((a: any) => a.auth_state === "connected");
+  const filteredRepos = repos.filter((r: any) =>
+    r.full_name.toLowerCase().includes(repoSearch.trim().toLowerCase())
+  );
 
   const refreshJobs = useCallback(async () => {
     try {
@@ -300,9 +304,17 @@ function JobsView({ agents }: any) {
         <form onSubmit=${handleSubmit} style=${{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "2rem" }}>
           <div>
             <label style=${{ display: "block", fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "0.3rem" }}>Repository</label>
+            <input
+              type="search"
+              value=${repoSearch}
+              onInput=${(e: any) => setRepoSearch(e.target.value)}
+              placeholder="Search repositories…"
+              aria-label="Search repositories"
+              style=${{ ...inputStyle, marginBottom: "0.5rem" }}
+            />
             <select value=${repo} onChange=${(e: any) => setRepo(e.target.value)} style=${{ ...inputStyle }}>
-              <option value="">Select a repo…</option>
-              ${repos.map((r: any) => html`<option key=${r.full_name} value=${r.full_name}>${r.full_name}${r.private ? " 🔒" : ""}</option>`)}
+              <option value="">${filteredRepos.length ? "Select a repo…" : "No matching repos"}</option>
+              ${filteredRepos.map((r: any) => html`<option key=${r.full_name} value=${r.full_name}>${r.full_name}${r.private ? " 🔒" : ""}</option>`)}
             </select>
           </div>
 
