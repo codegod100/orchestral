@@ -747,10 +747,20 @@ app.post("/api/conversations/:convId/stream", async (c) => {
         const text = extractText(event);
 
         if ("artifactUpdate" in event) {
-          // Artifact updates: if not append, replace; if append, concatenate
+          // Artifact updates: if not append, replace; if append, concatenate.
+          // Guard the replace branch on non-empty text — some agents (seen
+          // with billy's ADK-based backend) send a trailing artifactUpdate
+          // with an empty `data` part and no `append` flag as their final
+          // lastChunk marker, reusing the streaming artifact's id. Without
+          // this guard that event replaces the fully-accumulated fullText
+          // with "" right before the loop ends, so `if (fullText)` below
+          // skips addMessage() and the reply — already streamed correctly to
+          // the client — never gets persisted. The client then re-fetches
+          // history after the stream closes and the message vanishes, since
+          // it was never actually saved.
           if (event.artifactUpdate.append) {
             fullText += text;
-          } else {
+          } else if (text) {
             fullText = text;
           }
         } else if (text) {

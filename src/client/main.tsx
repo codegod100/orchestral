@@ -610,20 +610,33 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
               const data = JSON.parse(line.slice(6));
               if (data.error) throw new Error(data.error);
 
-              // Extract text from various response types
+              // Extract text from various response types. Mirrors the
+              // server's replace-vs-append semantics (index.ts's /stream
+              // handler) exactly: only an artifactUpdate with append:true
+              // concatenates onto what's already shown; everything else
+              // (a replace-style artifactUpdate, or a message/statusUpdate)
+              // REPLACES the accumulated text, same as what gets persisted.
+              // Blindly concatenating every chunk regardless of type — the
+              // previous behavior — double-appended a final "complete text"
+              // artifact onto the already-built word-by-word stream, then
+              // the post-stream history refetch replaced that doubled text
+              // with the correctly-saved single copy, reading as the
+              // message glitching/disappearing.
               let chunk = "";
+              let isAppend = false;
               if (data.task?.status?.message?.parts) {
                 chunk = data.task.status.message.parts.map((p: any) => p.text || "").join("");
               } else if (data.message?.parts) {
                 chunk = data.message.parts.map((p: any) => p.text || "").join("");
               } else if (data.artifactUpdate?.artifact?.parts) {
                 chunk = data.artifactUpdate.artifact.parts.map((p: any) => p.text || "").join("");
+                isAppend = !!data.artifactUpdate.append;
               } else if (data.statusUpdate?.status?.message?.parts) {
                 chunk = data.statusUpdate.status.message.parts.map((p: any) => p.text || "").join("");
               }
 
               if (chunk) {
-                fullText += chunk;
+                fullText = isAppend ? fullText + chunk : chunk;
                 // Update the streaming message
                 if (epoch === epochRef.current) {
                   setMessages(prev => prev.map(m =>
