@@ -113,6 +113,7 @@ app.use("/api/*", async (c, next) => {
     path === "/api/auth/logout" ||
     path === "/api/health" ||
     path === "/api/debug/boxd-net" ||
+    path === "/api/debug/boxd-auth-trace" ||
     path === "/api/agent/oidc/callback" ||
     path === "/api/github/callback"
   ) {
@@ -216,6 +217,58 @@ app.get("/api/debug/boxd-net", async (c) => {
   }
 
   return c.json(result);
+});
+
+// Every network-layer probe above (DNS, raw TCP, plain HTTPS, HTTP/2 with
+// correct h2 ALPN) succeeds fast from inside this same container — so the
+// `boxd auth` hang isn't basic reachability. Run the real binary with Rust's
+// tracing cranked up so its own logs show exactly which library call (DNS
+// resolution via hickory-dns, TCP connect, TLS handshake, or waiting on a
+// gRPC frame) it's actually stuck in, instead of guessing further from the
+// outside. Captures whatever output appears in a bounded window even if the
+// command never exits. Safe to remove once the hang is understood.
+app.get("/api/debug/boxd-auth-trace", async (c) => {
+  const proc = Bun.spawn(["boxd", "auth", "--json"], {
+    stdout: "pipe",
+    stderr: "pipe",
+    stdin: "ignore",
+    env: { ...process.env, RUST_LOG: "trace" },
+  });
+
+  const windowMs = 8000;
+  let stdout = "";
+  let stderr = "";
+  const start = Date.now();
+
+  const readAll = (async () => {
+    const [out, err] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+    ]);
+    stdout = out;
+    stderr = err;
+  })();
+
+  const timedOut = await Promise.race([
+    readAll.then(() => false),
+    new Promise<boolean>((resolve) => setTimeout(() => resolve(true), windowMs)),
+  ]);
+
+  if (timedOut) {
+    proc.kill("SIGKILL");
+    // Give the kill a moment to flush whatever was already buffered.
+    await Promise.race([readAll, new Promise((r) => setTimeout(r, 500))]);
+  }
+
+  return c.json({
+    timed_out: timedOut,
+    ms: Date.now() - start,
+    boxd_token_set: !!process.env.BOXD_TOKEN,
+    // Truncate — trace-level logs can be large; the tail is what matters
+    // (where it stopped making progress).
+    stdout_tail: stdout.slice(-4000),
+    stderr_tail: stderr.slice(-8000),
+  });
 });
 
 // ─── Console Auth (OIDC login for the orchestral console itself) ───────────────
