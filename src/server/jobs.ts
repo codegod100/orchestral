@@ -206,8 +206,16 @@ const BINARY_EXT_RE = /\.(png|jpe?g|gif|ico|svg|ttf|otf|woff2?|webp|pdf|zip|gz|t
 const SKIP_NAME_RE = /(^|\/)(Cargo\.lock|package-lock\.json|bun\.lock|yarn\.lock|pnpm-lock\.yaml|go\.sum)$/;
 
 const MAX_CONTEXT_FILES = 60; // cap on how many files we even attempt to fetch
-const MAX_PER_FILE_CHARS = 6_000; // per-file truncation while fetching
-const MAX_TOTAL_CONTEXT_CHARS = 60_000; // budget for what actually goes in the prompt
+// Real jobs run against orchestral's own repo kept failing on src/client/main.tsx
+// specifically — a genuinely large single-file UI component (41KB and growing)
+// that's also the file most instructions actually need to edit. At the old 6K
+// cap it always got keyword-excerpted instead of sent in full, and bots kept
+// writing diffs against content they'd only partially seen, which then failed
+// to apply. Raised enough to fit a file like that whole; still falls back to
+// keyword-excerpting above this for genuinely huge files (verified earlier
+// against a real 156KB Rust file).
+const MAX_PER_FILE_CHARS = 50_000; // per-file truncation while fetching
+const MAX_TOTAL_CONTEXT_CHARS = 150_000; // budget for what actually goes in the prompt
 
 const STOPWORDS = new Set([
   "the", "a", "an", "to", "of", "in", "on", "for", "and", "or", "is", "are", "be",
