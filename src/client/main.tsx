@@ -463,8 +463,16 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
   const [conversations, setConversations] = useState<any[]>([]);
   const [error, setError] = useState("");
   const [agentDetail, setAgentDetail] = useState<any>(agent);
+  const [showInfo, setShowInfo] = useState(false);
   const messagesEnd = useRef<any>(null);
   const eventSource = useRef<AbortController | null>(null);
+  // Guards against a slow/stale async fetch clobbering messages a newer
+  // action already replaced — e.g. the initial conversation-history GET
+  // resolving *after* the user has already sent a message, overwriting the
+  // just-added optimistic + streamed messages with the pre-send history and
+  // making them "flash and disappear". Every state-mutating action bumps
+  // this; any async result checks it's still current before applying.
+  const epochRef = useRef(0);
 
   // Load agent detail
   useEffect(() => {
@@ -472,8 +480,10 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
   }, [agent.id]);
 
   const openConversation = useCallback(async (id: string) => {
+    const epoch = ++epochRef.current;
     setConvId(id);
     const msgs = await api(`/conversations/${id}/messages`);
+    if (epoch !== epochRef.current) return; // superseded by a newer load/send
     setMessages(msgs.messages || []);
   }, []);
 
@@ -487,7 +497,9 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
         if (convs.length > 0) {
           await openConversation(convs[0].id);
         } else {
+          const epoch = ++epochRef.current;
           const conv = await api(`/agents/${agent.id}/conversations`, { method: "POST" });
+          if (epoch !== epochRef.current) return;
           setConversations([conv.conversation]);
           setConvId(conv.conversation.id);
           setMessages([]);
@@ -500,14 +512,16 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
 
   async function handleNewConversation() {
     setError("");
+    const epoch = ++epochRef.current;
     try {
       const data = await api(`/agents/${agent.id}/conversations`, { method: "POST" });
+      if (epoch !== epochRef.current) return;
       setConversations(prev => [data.conversation, ...prev]);
       setConvId(data.conversation.id);
       setMessages([]);
       setInput("");
     } catch (e: any) {
-      setError(e.message);
+      if (epoch === epochRef.current) setError(e.message);
     }
   }
 
@@ -530,9 +544,11 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
     e?.preventDefault();
     if (!input.trim() || !convId || sending) return;
     const text = input.trim();
+    const activeConvId = convId;
     setInput("");
     setSending(true);
     setError("");
+    const epoch = ++epochRef.current;
 
     // Optimistic: add user message
     setMessages(prev => [...prev, { role: "user", text, created_at: Date.now() / 1000, id: "temp-" + Date.now() }]);
@@ -543,24 +559,26 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
       // Try streaming first
       const supportsStreaming = agentDetail?.agent_card?.capabilities?.streaming ?? true;
       if (supportsStreaming) {
-        await streamMessage(text);
+        await streamMessage(text, activeConvId, epoch);
       } else {
-        await sendNonStreaming(text);
+        await sendNonStreaming(text, activeConvId, epoch);
       }
     } catch (err: any) {
-      setError(err.message);
-      if (err.message.includes("Authentication")) {
-        onRefresh();
+      if (epoch === epochRef.current) {
+        setError(err.message);
+        if (err.message.includes("Authentication")) {
+          onRefresh();
+        }
+        // Remove the streaming placeholder
+        setMessages(prev => prev.filter(m => !m.streaming));
       }
-      // Remove the streaming placeholder
-      setMessages(prev => prev.filter(m => !m.streaming));
     } finally {
       setSending(false);
     }
   }
 
-  async function streamMessage(text: string) {
-    const res = await fetch(`/api/conversations/${convId}/stream`, {
+  async function streamMessage(text: string, activeConvId: string, epoch: number) {
+    const res = await fetch(`/api/conversations/${activeConvId}/stream`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
@@ -607,9 +625,11 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
               if (chunk) {
                 fullText += chunk;
                 // Update the streaming message
-                setMessages(prev => prev.map(m =>
-                  m.streaming ? { ...m, text: fullText } : m
-                ));
+                if (epoch === epochRef.current) {
+                  setMessages(prev => prev.map(m =>
+                    m.streaming ? { ...m, text: fullText } : m
+                  ));
+                }
               }
             } catch (parseErr: any) {
               if (parseErr.message) throw parseErr;
@@ -620,19 +640,20 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
     }
 
     // Finalize: reload messages from server to get proper IDs
-    if (convId) {
-      const msgs = await api(`/conversations/${convId}/messages`);
-      setMessages(msgs.messages || []);
+    if (epoch === epochRef.current) {
+      const msgs = await api(`/conversations/${activeConvId}/messages`);
+      if (epoch === epochRef.current) setMessages(msgs.messages || []);
     }
   }
 
-  async function sendNonStreaming(text: string) {
-    const data = await api(`/conversations/${convId}/send`, {
+  async function sendNonStreaming(text: string, activeConvId: string, epoch: number) {
+    await api(`/conversations/${activeConvId}/send`, {
       method: "POST",
       body: JSON.stringify({ text }),
     });
-    const msgs = await api(`/conversations/${convId}/messages`);
-    setMessages(msgs.messages || []);
+    if (epoch !== epochRef.current) return;
+    const msgs = await api(`/conversations/${activeConvId}/messages`);
+    if (epoch === epochRef.current) setMessages(msgs.messages || []);
   }
 
   // Connect button for agents needing OIDC
@@ -709,6 +730,18 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
           ${needsAuth ? "Needs Auth" : "Connected"}
         </div>
         <button
+          onClick=${() => setShowInfo(v => !v)}
+          title="Agent info"
+          style=${{
+            padding: "0.4rem 0.6rem", borderRadius: "var(--radius)",
+            background: showInfo ? "var(--bg-hover)" : "var(--bg-card)",
+            border: "1px solid var(--border)", color: "var(--text-dim)", cursor: "pointer",
+            fontWeight: 600, fontSize: "0.75rem",
+          }}
+        >
+          ℹ️
+        </button>
+        <button
           onClick=${onDelete}
           title="Remove this agent"
           style=${{
@@ -720,6 +753,30 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
           🗑 Remove
         </button>
       </header>
+
+      ${showInfo && html`
+        <div style=${{
+          padding: "0.9rem 1.5rem", borderBottom: "1px solid var(--border)",
+          fontSize: "0.78rem", color: "var(--text-dim)", display: "flex", flexDirection: "column", gap: "0.35rem",
+        }}>
+          ${[
+            ["Card URL", agentDetail?.card_url],
+            ["Endpoint URL", agentDetail?.agent_card?.url],
+            ["Protocol version", agentDetail?.agent_card?.protocolVersion],
+            ["Transport", agentDetail?.agent_card?.preferredTransport],
+            ["Agent version", agentDetail?.agent_card?.version],
+            ["Security", agentDetail?.security_type],
+            ["Streaming", agentDetail?.agent_card?.capabilities?.streaming ? "yes" : "no"],
+            ["Skills", (agentDetail?.agent_card?.skills || []).map((s: any) => s.name || s.id).filter(Boolean).join(", ") || "—"],
+            ["Added", agentDetail?.created_at ? new Date(agentDetail.created_at * 1000).toLocaleString() : undefined],
+          ].filter(([, v]) => v !== undefined && v !== null && v !== "").map(([label, value]) => html`
+            <div key=${label} style=${{ display: "flex", gap: "0.6rem" }}>
+              <span style=${{ minWidth: "110px", flexShrink: 0, color: "var(--text-dimmer)" }}>${label}</span>
+              <span style=${{ color: "var(--text)", wordBreak: "break-all" }}>${value}</span>
+            </div>
+          `)}
+        </div>
+      `}
 
       ${needsAuth && html`
         <div style=${{ padding: "1.5rem", borderBottom: "1px solid var(--border)", maxWidth: "600px" }}>
