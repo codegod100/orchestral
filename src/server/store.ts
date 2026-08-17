@@ -3,8 +3,21 @@
  */
 
 import { Database } from "bun:sqlite";
+import { existsSync } from "node:fs";
+import path from "node:path";
 
-const db = new Database("orchestral.db", { create: true });
+// Store the DB on the persistent volume when one's mounted (Railway mounts
+// orchestral's volume at /data — see railway.json / the service's volume
+// config), falling back to the working directory for local dev where there
+// is no volume. Without this, the DB was created at a bare relative path,
+// which resolves inside the container's ephemeral filesystem — every fresh
+// deploy got a brand new empty database, silently dropping all agents, the
+// GitHub OAuth token, and job history. DATA_DIR can override either way.
+const DATA_DIR = process.env.DATA_DIR ?? (existsSync("/data") ? "/data" : ".");
+const DB_PATH = path.join(DATA_DIR, "orchestral.db");
+console.log(`Using SQLite DB at ${DB_PATH}`);
+
+const db = new Database(DB_PATH, { create: true });
 db.exec("PRAGMA journal_mode = WAL;");
 db.exec("PRAGMA foreign_keys = ON;");
 
