@@ -34,6 +34,9 @@ import {
   extractText, AuthError,
 } from "./a2a-client.ts";
 import {
+  resolveAtprotoToCardUrl, isAtprotoIdentifier,
+} from "./atproto.ts";
+import {
   buildGithubAuthorizeUrl, exchangeGithubCode, getGithubUser, listGithubRepos,
 } from "./github.ts";
 import { runJob } from "./jobs.ts";
@@ -250,6 +253,7 @@ app.get("/api/agents", (c) => {
       security_type: a.security_type,
       auth_state: a.auth_state,
       created_at: a.created_at,
+      atproto_did: a.atproto_did ?? null,
     })),
   });
 });
@@ -270,15 +274,43 @@ app.get("/api/agents/:id", (c) => {
     has_oidc_credentials: !!(agent.oidc_client_id),
     agent_card: JSON.parse(agent.agent_card_json),
     created_at: agent.created_at,
+    atproto_did: agent.atproto_did ?? null,
   });
 });
 
-// Add a new agent by Agent Card URL
+// Resolve an ATProto handle or DID to a card URL (preview before adding)
+app.post("/api/atproto/resolve", async (c) => {
+  const body = await c.req.json();
+  const { identifier } = body;
+  if (!identifier) return c.json({ error: "identifier required" }, 400);
+
+  try {
+    const resolution = await resolveAtprotoToCardUrl(identifier);
+    return c.json({ resolution });
+  } catch (e) {
+    return c.json({ error: (e as Error).message }, 502);
+  }
+});
+
+// Add a new agent by Agent Card URL or ATProto DID/handle
 app.post("/api/agents", async (c) => {
   const body = await c.req.json();
-  let { card_url, oidc_client_id, oidc_client_secret } = body;
+  let { card_url, atproto_id, oidc_client_id, oidc_client_secret } = body;
 
-  if (!card_url) return c.json({ error: "card_url required" }, 400);
+  // Resolve ATProto DID or handle to a card URL
+  let atprotoDid: string | null = null;
+  const atprotoIdentifier = atproto_id || (card_url && isAtprotoIdentifier(card_url) ? card_url : null);
+  if (atprotoIdentifier) {
+    try {
+      const resolution = await resolveAtprotoToCardUrl(atprotoIdentifier);
+      card_url = resolution.cardUrl;
+      atprotoDid = resolution.did;
+    } catch (e) {
+      return c.json({ error: `Failed to resolve ATProto identifier: ${(e as Error).message}` }, 502);
+    }
+  }
+
+  if (!card_url) return c.json({ error: "card_url or atproto_id required" }, 400);
 
   // Fetch the Agent Card
   let card;
@@ -341,6 +373,7 @@ app.post("/api/agents", async (c) => {
     refresh_token: refreshToken,
     token_expires_at: tokenExpiresAt,
     auth_state: authState,
+    atproto_did: atprotoDid,
   });
 
   return c.json({ agent: { id: agent.id, name: agent.name, auth_state: agent.auth_state, security_type: agent.security_type } });
