@@ -33,6 +33,7 @@ import {
   fetchAgentCard, detectSecurity, sendMessage, sendMessageStream,
   extractText, AuthError,
 } from "./a2a-client.ts";
+import { isAtprotoInput, resolveAtprotoAgent } from "./atproto.ts";
 import {
   buildGithubAuthorizeUrl, exchangeGithubCode, getGithubUser, listGithubRepos,
 } from "./github.ts";
@@ -237,6 +238,19 @@ app.get("/api/auth/me", (c) => {
 
 // ─── Agent management ──────────────────────────────────────────────────────────
 
+// Resolve an ATProto DID or handle to an A2A URL (preview before adding)
+app.get("/api/atproto/resolve", async (c) => {
+  const input = c.req.query("input");
+  if (!input) return c.json({ error: "input query param required" }, 400);
+  if (!isAtprotoInput(input)) return c.json({ error: "Input does not look like an ATProto DID or handle" }, 400);
+  try {
+    const resolved = await resolveAtprotoAgent(input);
+    return c.json(resolved);
+  } catch (e) {
+    return c.json({ error: (e as Error).message }, 502);
+  }
+});
+
 // List all connected agents
 app.get("/api/agents", (c) => {
   const agents = listAgents();
@@ -250,6 +264,8 @@ app.get("/api/agents", (c) => {
       security_type: a.security_type,
       auth_state: a.auth_state,
       created_at: a.created_at,
+      atproto_did: a.atproto_did ?? null,
+      atproto_handle: a.atproto_handle ?? null,
     })),
   });
 });
@@ -270,15 +286,32 @@ app.get("/api/agents/:id", (c) => {
     has_oidc_credentials: !!(agent.oidc_client_id),
     agent_card: JSON.parse(agent.agent_card_json),
     created_at: agent.created_at,
+    atproto_did: agent.atproto_did ?? null,
+    atproto_handle: agent.atproto_handle ?? null,
   });
 });
 
-// Add a new agent by Agent Card URL
+// Add a new agent by Agent Card URL, ATProto DID, or handle
 app.post("/api/agents", async (c) => {
   const body = await c.req.json();
   let { card_url, oidc_client_id, oidc_client_secret } = body;
 
   if (!card_url) return c.json({ error: "card_url required" }, 400);
+
+  // Resolve ATProto DID or handle to an A2A URL
+  let atprotoDid: string | null = null;
+  let atprotoHandle: string | null = null;
+
+  if (isAtprotoInput(card_url)) {
+    try {
+      const resolved = await resolveAtprotoAgent(card_url);
+      atprotoDid = resolved.did;
+      atprotoHandle = resolved.handle ?? null;
+      card_url = resolved.a2aUrl;
+    } catch (e) {
+      return c.json({ error: `Failed to resolve ATProto identity: ${(e as Error).message}` }, 502);
+    }
+  }
 
   // Fetch the Agent Card
   let card;
@@ -341,6 +374,8 @@ app.post("/api/agents", async (c) => {
     refresh_token: refreshToken,
     token_expires_at: tokenExpiresAt,
     auth_state: authState,
+    atproto_did: atprotoDid,
+    atproto_handle: atprotoHandle,
   });
 
   return c.json({ agent: { id: agent.id, name: agent.name, auth_state: agent.auth_state, security_type: agent.security_type } });
