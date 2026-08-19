@@ -21,6 +21,11 @@ const db = new Database(DB_PATH, { create: true });
 db.exec("PRAGMA journal_mode = WAL;");
 db.exec("PRAGMA foreign_keys = ON;");
 
+// Additive migrations for existing databases
+for (const col of ["atproto_did TEXT", "atproto_handle TEXT"]) {
+  try { db.exec(`ALTER TABLE agents ADD COLUMN ${col}`); } catch { /* already exists */ }
+}
+
 // ─── Schema ────────────────────────────────────────────────────────────────
 
 db.exec(`
@@ -39,7 +44,9 @@ db.exec(`
     refresh_token TEXT,
     token_expires_at INTEGER,
     created_at INTEGER DEFAULT (unixepoch()),
-    auth_state TEXT
+    auth_state TEXT,
+    atproto_did TEXT,
+    atproto_handle TEXT
   );
 
   CREATE TABLE IF NOT EXISTS oidc_flows (
@@ -112,16 +119,19 @@ export interface AgentRecord {
   token_expires_at: number | null;
   created_at: number;
   auth_state: string | null;
+  atproto_did: string | null;
+  atproto_handle: string | null;
 }
 
 export function insertAgent(a: Omit<AgentRecord, "created_at">): AgentRecord {
   db.prepare(`
-    INSERT INTO agents (id, card_url, name, description, icon_url, agent_card_json, security_type, oidc_issuer, oidc_client_id, oidc_client_secret, access_token, refresh_token, token_expires_at, auth_state)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO agents (id, card_url, name, description, icon_url, agent_card_json, security_type, oidc_issuer, oidc_client_id, oidc_client_secret, access_token, refresh_token, token_expires_at, auth_state, atproto_did, atproto_handle)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     a.id, a.card_url, a.name, a.description, a.icon_url, a.agent_card_json,
     a.security_type, a.oidc_issuer, a.oidc_client_id, a.oidc_client_secret,
-    a.access_token, a.refresh_token, a.token_expires_at, a.auth_state
+    a.access_token, a.refresh_token, a.token_expires_at, a.auth_state,
+    a.atproto_did ?? null, a.atproto_handle ?? null
   );
   return getAgent(a.id)!;
 }
@@ -142,12 +152,14 @@ export function updateAgent(id: string, updates: Partial<AgentRecord>): AgentRec
     UPDATE agents SET
       card_url = ?, name = ?, description = ?, icon_url = ?, agent_card_json = ?,
       security_type = ?, oidc_issuer = ?, oidc_client_id = ?, oidc_client_secret = ?,
-      access_token = ?, refresh_token = ?, token_expires_at = ?, auth_state = ?
+      access_token = ?, refresh_token = ?, token_expires_at = ?, auth_state = ?,
+      atproto_did = ?, atproto_handle = ?
     WHERE id = ?
   `).run(
     merged.card_url, merged.name, merged.description, merged.icon_url, merged.agent_card_json,
     merged.security_type, merged.oidc_issuer, merged.oidc_client_id, merged.oidc_client_secret,
     merged.access_token, merged.refresh_token, merged.token_expires_at, merged.auth_state,
+    merged.atproto_did ?? null, merged.atproto_handle ?? null,
     id
   );
   return getAgent(id);
