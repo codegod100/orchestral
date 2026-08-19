@@ -80,12 +80,12 @@ var H0,M,g0,P1,p,m0,c0,p0,T0,X0,n,a0,M0,U0,_0,F1,K0={},q0=[],T1=/acit|ex(?:s|g|n
         Orchestral connects to A2A agents via OIDC and lets you message them
       </p>
     </div>
-  `}var x1={queued:"Queued",provisioning:"Provisioning container…",cloning:"Cloning repo…",running:"Bot is working…",patching:"Applying patch…",opening_pr:"Opening PR…",done:"Done",failed:"Failed"};function j1({agents:Z}){let[Y,O]=U(null),[W,G]=U([]),[Q,K]=U([]),[z,N]=U(""),[q,$]=U(""),[T,X]=U(""),[H,V]=U(""),[P,D]=U(!1),[w,F]=U(""),[x,m]=U(null),v=(Z||[]).filter((B)=>B.auth_state==="connected"),R=W.filter((B)=>B.full_name.toLowerCase().includes(T.trim().toLowerCase())),f=Q0(async()=>{try{let B=await C("/jobs");K(B.jobs||[])}catch(B){console.error("Failed to load jobs:",B)}},[]);a(()=>{(async()=>{try{let B=await C("/github/status");if(O(B),B.connected){let E=await C("/github/repos");G(E.repos||[])}}catch(B){F(B.message)}await f()})()},[]),a(()=>{if(!Q.some((S)=>!["done","failed"].includes(S.status)))return;let E=setInterval(f,3000);return()=>clearInterval(E)},[Q,f]);async function c(B){if(B?.preventDefault(),!z||!q||!H.trim()||P)return;D(!0),F("");try{let E=await C("/jobs",{method:"POST",body:JSON.stringify({agent_id:z,repo:q,instruction:H.trim()})});K((S)=>[E.job,...S]),V("")}catch(E){F(E.message)}finally{D(!1)}}return J`
+  `}var x1={queued:"Queued",provisioning:"Provisioning container…",cloning:"Cloning repo…",running:"Agent is working…",patching:"Applying patch…",opening_pr:"Opening PR…",done:"Done",failed:"Failed"};function j1({agents:Z}){let[Y,O]=U(null),[W,G]=U([]),[Q,K]=U([]),[z,N]=U(""),[q,$]=U(""),[T,X]=U(""),[H,V]=U(""),[P,D]=U(!1),[w,F]=U(""),[x,m]=U(null),v=(Z||[]).filter((B)=>B.auth_state==="connected"),R=W.filter((B)=>B.full_name.toLowerCase().includes(T.trim().toLowerCase())),f=Q0(async()=>{try{let B=await C("/jobs");K(B.jobs||[])}catch(B){console.error("Failed to load jobs:",B)}},[]);a(()=>{(async()=>{try{let B=await C("/github/status");if(O(B),B.connected){let E=await C("/github/repos");G(E.repos||[])}}catch(B){F(B.message)}await f()})()},[]),a(()=>{if(!Q.some((S)=>!["done","failed"].includes(S.status)))return;let E=setInterval(f,3000);return()=>clearInterval(E)},[Q,f]);async function c(B){if(B?.preventDefault(),!z||!q||!H.trim()||P)return;D(!0),F("");try{let E=await C("/jobs",{method:"POST",body:JSON.stringify({agent_id:z,repo:q,instruction:H.trim()})});K((S)=>[E.job,...S]),V("")}catch(E){F(E.message)}finally{D(!1)}}return J`
     <div style=${{maxWidth:"760px",margin:"0 auto",padding:"2rem",overflowY:"auto",flex:1}}>
       <h2 style=${{fontSize:"1.25rem",fontWeight:700,marginBottom:"0.25rem"}}>🚀 Jobs</h2>
       <p style=${{fontSize:"0.8rem",color:"var(--text-dim)",marginBottom:"1.5rem"}}>
-        Pick a repo and a bot, describe what to do, and orchestral spins up a fresh container,
-        asks the bot for a patch, and opens a pull request.
+        Pick a repo and an agent, describe what to do, and orchestral spins up a fresh container,
+        asks the agent for a patch, and opens a pull request.
       </p>
 
       ${!Y?.configured&&J`
@@ -127,12 +127,12 @@ var H0,M,g0,P1,p,m0,c0,p0,T0,X0,n,a0,M0,U0,_0,F1,K0={},q0=[],T1=/acit|ex(?:s|g|n
           </div>
 
           <div>
-            <label style=${{display:"block",fontSize:"0.75rem",color:"var(--text-dim)",marginBottom:"0.3rem"}}>Bot</label>
+            <label style=${{display:"block",fontSize:"0.75rem",color:"var(--text-dim)",marginBottom:"0.3rem"}}>Agent</label>
             <select value=${z} onChange=${(B)=>N(B.target.value)} style=${{...o}}>
-              <option value="">Select a bot…</option>
+              <option value="">Select an agent…</option>
               ${v.map((B)=>J`<option key=${B.id} value=${B.id}>${B.name}</option>`)}
             </select>
-            ${v.length===0&&J`<p style=${{fontSize:"0.7rem",color:"var(--text-dimmer)",marginTop:"0.3rem"}}>No connected bots yet — add one first.</p>`}
+            ${v.length===0&&J`<p style=${{fontSize:"0.7rem",color:"var(--text-dimmer)",marginTop:"0.3rem"}}>No connected agents yet — add one first.</p>`}
           </div>
 
           <div>

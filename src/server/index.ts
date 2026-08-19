@@ -276,7 +276,7 @@ app.get("/api/agents/:id", (c) => {
 // Add a new agent by Agent Card URL
 app.post("/api/agents", async (c) => {
   const body = await c.req.json();
-  const { card_url, oidc_client_id, oidc_client_secret } = body;
+  let { card_url, oidc_client_id, oidc_client_secret } = body;
 
   if (!card_url) return c.json({ error: "card_url required" }, 400);
 

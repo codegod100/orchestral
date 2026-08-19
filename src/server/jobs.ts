@@ -341,7 +341,7 @@ export async function runJob(jobId: string): Promise<void> {
     return;
   }
   if (agent.auth_state !== "connected") {
-    updateJob(jobId, { status: "failed", error: "Bot is not connected — reconnect it first" });
+    updateJob(jobId, { status: "failed", error: "Agent is not connected — reconnect it first" });
     return;
   }
 
@@ -462,7 +462,7 @@ export async function runJob(jobId: string): Promise<void> {
 
     log(jobId, `→ opening pull request`);
     updateJob(jobId, { status: "opening_pr" });
-    const prBody = `Automated by Orchestral bot **${agent.name}**.\n\n**Instruction:**\n${job.instruction}`;
+    const prBody = `Automated by Orchestral agent **${agent.name}**.\n\n**Instruction:**\n${job.instruction}`;
     const localBodyPath = `/tmp/orchestral-job-${jobId}.body`;
     await Bun.write(localBodyPath, prBody);
     await boxdCp(localBodyPath, "/tmp/pr-body.md", machineName);
