@@ -1,3 +1,9 @@
+import { lookup as dnsLookup } from "node:dns";
+import { isIP } from "node:net";
+import { request as httpsRequest } from "node:https";
+
+import type { AgentCard } from "./a2a-types.ts";
+
 /**
  * ATProto identity resolution for orchestral.
  *
@@ -52,14 +58,8 @@ export async function resolveHandleToDid(handle: string): Promise<string> {
 
   // 1. Try /.well-known/atproto-did on the handle's domain
   try {
-    const res = await fetch(`https://${h}/.well-known/atproto-did`, {
-      signal: AbortSignal.timeout(5_000),
-      headers: { Accept: "text/plain" },
-    });
-    if (res.ok) {
-      const did = (await res.text()).trim();
-      if (isAtprotoDid(did)) return did;
-    }
+    const did = (await fetchTextWithPublicIpGuard(`https://${h}/.well-known/atproto-did`)).trim();
+    if (isAtprotoDid(did)) return did;
   } catch {
     // fall through
   }
@@ -103,6 +103,7 @@ export async function resolveDidDocument(did: string): Promise<DidDocument> {
     const domain = decodeURIComponent(parts[0]);
     const path = parts.length > 1 ? parts.slice(1).map(decodeURIComponent).join("/") : ".well-known";
     url = `https://${domain}/${path}/did.json`;
+    return await fetchJsonWithPublicIpGuard<DidDocument>(url);
   } else {
     throw new Error(`Unsupported DID method: ${did}`);
   }
@@ -142,6 +143,144 @@ export interface AgentCardRecord {
   displayName?: string;
 }
 
+function normalizeIpLiteral(hostname: string): string {
+  return hostname.startsWith("[") && hostname.endsWith("]")
+    ? hostname.slice(1, -1)
+    : hostname;
+}
+
+function validatePublicHttpsUrl(url: string, label: string): URL {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`${label} is invalid: ${url}`);
+  }
+
+  if (parsed.protocol !== "https:") {
+    throw new Error(`${label} must use HTTPS`);
+  }
+
+  const hostname = normalizeIpLiteral(parsed.hostname.toLowerCase());
+  if (
+    !hostname ||
+    hostname === "localhost" ||
+    hostname.endsWith(".localhost") ||
+    hostname.endsWith(".local") ||
+    (!hostname.includes(".") && isIP(hostname) === 0)
+  ) {
+    throw new Error(`${label} must use a public hostname`);
+  }
+
+  if (isIP(hostname) !== 0 && !isPublicIpAddress(hostname)) {
+    throw new Error(`${label} cannot use a private or loopback IP address`);
+  }
+
+  return parsed;
+}
+
+function guardedLookup(
+  hostname: string,
+  options: { all?: boolean } | number,
+  callback: (err: Error | null, address: string | Array<{ address: string; family: number }>, family?: number) => void,
+) {
+  const normalized = normalizeIpLiteral(hostname);
+  const wantsAll = typeof options === "object" && !!options?.all;
+  if (isIP(normalized) !== 0) {
+    if (!isPublicIpAddress(normalized)) {
+      callback(new Error("Hostname resolves to a private or loopback address"), "");
+      return;
+    }
+    if (wantsAll) {
+      callback(null, [{ address: normalized, family: isIP(normalized) }]);
+      return;
+    }
+    callback(null, normalized, isIP(normalized));
+    return;
+  }
+
+  dnsLookup(normalized, { all: true, verbatim: true }, (err, addresses) => {
+    if (err) {
+      callback(err, "");
+      return;
+    }
+    if (!addresses.length) {
+      callback(new Error("Hostname did not resolve"), "");
+      return;
+    }
+    if (addresses.some(address => !isPublicIpAddress(address.address))) {
+      callback(new Error("Hostname resolves to a private or loopback address"), "");
+      return;
+    }
+    if (wantsAll) {
+      callback(null, addresses);
+      return;
+    }
+    callback(null, addresses[0].address, addresses[0].family);
+  });
+}
+
+async function fetchTextWithPublicIpGuard(url: string, accept = "text/plain", redirectsRemaining = 3): Promise<string> {
+  const parsed = validatePublicHttpsUrl(url, "Resolved URL");
+
+  return await new Promise((resolve, reject) => {
+    const req = httpsRequest(parsed, {
+      method: "GET",
+      headers: { Accept: accept },
+      lookup: guardedLookup,
+    }, (res) => {
+      const status = res.statusCode ?? 0;
+      const location = res.headers.location;
+      if (status >= 300 && status < 400 && location) {
+        res.resume();
+        if (redirectsRemaining <= 0) {
+          reject(new Error("Too many redirects"));
+          return;
+        }
+        const nextUrl = new URL(location, parsed).toString();
+        fetchTextWithPublicIpGuard(nextUrl, accept, redirectsRemaining - 1).then(resolve, reject);
+        return;
+      }
+
+      const chunks: Buffer[] = [];
+      res.on("data", chunk => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+      res.on("end", () => {
+        const body = Buffer.concat(chunks).toString("utf8");
+        if (status < 200 || status >= 300) {
+          reject(new Error(`Request failed: ${status}`));
+          return;
+        }
+        resolve(body);
+      });
+    });
+
+    req.setTimeout(8_000, () => req.destroy(new Error("Request timed out")));
+    req.on("error", reject);
+    req.end();
+  });
+}
+
+async function fetchJsonWithPublicIpGuard<T>(url: string): Promise<T> {
+  const text = await fetchTextWithPublicIpGuard(url, "application/json");
+  return JSON.parse(text) as T;
+}
+
+function normalizeAgentCardUrl(url: string): string {
+  let cardUrl = url.trim().replace(/\/$/, "");
+  if (!cardUrl.endsWith("/.well-known/agent-card.json") && !cardUrl.includes("/.well-known/")) {
+    cardUrl = `${cardUrl}/.well-known/agent-card.json`;
+  }
+  return cardUrl;
+}
+
+export async function fetchResolvedAgentCard(url: string): Promise<AgentCard> {
+  const card = await fetchJsonWithPublicIpGuard<AgentCard>(normalizeAgentCardUrl(url));
+  if (!card.name || !card.url) {
+    throw new Error("Invalid agent card: missing name or url");
+  }
+  return card;
+}
+
 /**
  * Fetch the orchestral agent card record from the actor's PDS.
  * Looks for a record of type app.orchestral.agentCard with rkey "self".
@@ -151,18 +290,21 @@ export async function fetchAgentCardRecord(
   pdsUrl: string,
   did: string,
 ): Promise<AgentCardRecord | null> {
-  const url = `${pdsUrl}/xrpc/com.atproto.repo.getRecord?repo=${encodeURIComponent(did)}&collection=${encodeURIComponent(ATPROTO_AGENT_CARD_NSID)}&rkey=self`;
+  const safePdsUrl = validatePublicHttpsUrl(pdsUrl, "Resolved PDS URL").toString().replace(/\/$/, "");
+  const url = `${safePdsUrl}/xrpc/com.atproto.repo.getRecord?repo=${encodeURIComponent(did)}&collection=${encodeURIComponent(ATPROTO_AGENT_CARD_NSID)}&rkey=self`;
   try {
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(8_000),
-      headers: { Accept: "application/json" },
-    });
-    if (res.status === 400 || res.status === 404) return null;
-    if (!res.ok) throw new Error(`PDS record fetch failed: ${res.status}`);
-    const json = (await res.json()) as { value: AgentCardRecord };
+    const json = await fetchJsonWithPublicIpGuard<{ value: AgentCardRecord }>(url);
     return json.value ?? null;
   } catch (e) {
-    if ((e as Error).message.startsWith("PDS record fetch failed")) throw e;
+    const message = (e as Error).message;
+    if (message === "Request failed: 400" || message === "Request failed: 404") return null;
+    if (
+      message.startsWith("Request failed:") ||
+      message.startsWith("Resolved PDS URL") ||
+      message.includes("private or loopback")
+    ) {
+      throw e;
+    }
     return null;
   }
 }
@@ -173,6 +315,45 @@ export interface AtprotoResolution {
   did: string;
   handle?: string;
   a2aUrl: string;
+}
+
+function isPrivateIpv4Address(ip: string): boolean {
+  const parts = ip.split(".").map(Number);
+  if (parts.length !== 4 || parts.some(part => !Number.isInteger(part) || part < 0 || part > 255)) {
+    return true;
+  }
+
+  const [a, b] = parts;
+  if (a === 0 || a === 10 || a === 127) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 198 && (b === 18 || b === 19)) return true;
+  if (a >= 224) return true;
+  return false;
+}
+
+function isPrivateIpv6Address(ip: string): boolean {
+  const normalized = ip.toLowerCase();
+  if (normalized === "::" || normalized === "::1") return true;
+  if (normalized.startsWith("fc") || normalized.startsWith("fd")) return true;
+  if (normalized.startsWith("fe8") || normalized.startsWith("fe9") || normalized.startsWith("fea") || normalized.startsWith("feb")) return true;
+  if (normalized.startsWith("::ffff:")) {
+    return isPrivateIpv4Address(normalized.slice("::ffff:".length));
+  }
+  return false;
+}
+
+function isPublicIpAddress(ip: string): boolean {
+  const family = isIP(ip);
+  if (family === 4) return !isPrivateIpv4Address(ip);
+  if (family === 6) return !isPrivateIpv6Address(ip);
+  return false;
+}
+
+export async function validateResolvedA2AUrl(url: string): Promise<string> {
+  return validatePublicHttpsUrl(url, "Resolved A2A URL").toString();
 }
 
 /**
@@ -198,14 +379,14 @@ export async function resolveAtprotoAgent(input: string): Promise<AtprotoResolut
   // 1. DID document service endpoint (fastest — no extra HTTP round trip)
   const fromDoc = extractA2AUrlFromDidDoc(doc);
   if (fromDoc) {
-    return { did, handle, a2aUrl: fromDoc };
+    return { did, handle, a2aUrl: await validateResolvedA2AUrl(fromDoc) };
   }
 
   // 2. PDS record lookup
   const pdsUrl = extractPdsUrl(doc);
   const record = await fetchAgentCardRecord(pdsUrl, did);
   if (record?.a2aUrl) {
-    return { did, handle, a2aUrl: record.a2aUrl };
+    return { did, handle, a2aUrl: await validateResolvedA2AUrl(record.a2aUrl) };
   }
 
   throw new Error(
