@@ -33,7 +33,7 @@ import {
   fetchAgentCard, detectSecurity, sendMessage, sendMessageStream,
   extractText, AuthError,
 } from "./a2a-client.ts";
-import { isAtprotoInput, resolveAtprotoAgent } from "./atproto.ts";
+import { fetchResolvedAgentCard, isAtprotoInput, resolveAtprotoAgent } from "./atproto.ts";
 import {
   buildGithubAuthorizeUrl, exchangeGithubCode, getGithubUser, listGithubRepos,
 } from "./github.ts";
@@ -302,7 +302,9 @@ app.post("/api/agents", async (c) => {
   let atprotoDid: string | null = null;
   let atprotoHandle: string | null = null;
 
-  if (isAtprotoInput(card_url)) {
+  const isAtprotoAgent = isAtprotoInput(card_url);
+
+  if (isAtprotoAgent) {
     try {
       const resolved = await resolveAtprotoAgent(card_url);
       atprotoDid = resolved.did;
@@ -316,7 +318,9 @@ app.post("/api/agents", async (c) => {
   // Fetch the Agent Card
   let card;
   try {
-    card = await fetchAgentCard(card_url);
+    card = isAtprotoAgent
+      ? await fetchResolvedAgentCard(card_url)
+      : await fetchAgentCard(card_url);
   } catch (e) {
     return c.json({ error: `Failed to fetch agent card: ${(e as Error).message}` }, 502);
   }
