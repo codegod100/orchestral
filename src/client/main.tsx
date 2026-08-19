@@ -388,17 +388,43 @@ function JobsView({ agents }: any) {
 }
 
 function AddAgent({ onAdded }: any) {
+  const [mode, setMode] = useState<"url" | "atproto">("url");
   const [cardUrl, setCardUrl] = useState("");
+  const [atprotoId, setAtprotoId] = useState("");
+  const [resolving, setResolving] = useState(false);
+  const [resolved, setResolved] = useState<any>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  async function handleResolve() {
+    if (!atprotoId.trim()) return;
+    setResolving(true);
+    setResolved(null);
+    setError("");
+    try {
+      const data = await api("/atproto/resolve", {
+        method: "POST",
+        body: JSON.stringify({ identifier: atprotoId.trim() }),
+      });
+      setResolved(data.resolution);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setResolving(false);
+    }
+  }
 
   async function handleAdd() {
     setError("");
     setLoading(true);
     try {
+      const body =
+        mode === "atproto"
+          ? { atproto_id: atprotoId.trim() }
+          : { card_url: cardUrl.trim() };
       const data = await api("/agents", {
         method: "POST",
-        body: JSON.stringify({ card_url: cardUrl }),
+        body: JSON.stringify(body),
       });
       onAdded(data.agent);
     } catch (e: any) {
@@ -408,38 +434,114 @@ function AddAgent({ onAdded }: any) {
     }
   }
 
+  const tabStyle = (active: boolean) => ({
+    flex: 1, padding: "0.5rem", fontSize: "0.85rem", fontWeight: 600, cursor: "pointer",
+    border: "1px solid var(--border)", background: active ? "var(--accent)" : "var(--bg-card)",
+    color: active ? "white" : "var(--text)", borderRadius: "var(--radius)",
+  });
+
+  const canAdd = mode === "url" ? !!cardUrl.trim() : !!atprotoId.trim();
+
   return html`
     <div style=${{ maxWidth: "640px", margin: "0 auto", padding: "2rem", overflowY: "auto", flex: 1 }}>
       <h2 style=${{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem" }}>Add A2A Agent</h2>
 
-      <div style=${{ marginBottom: "1.5rem" }}>
-        <label style=${{ display: "block", fontSize: "0.85rem", color: "var(--text-dim)", marginBottom: "0.4rem" }}>
-          Agent Card URL
-        </label>
-        <input
-          type="text"
-          value=${cardUrl}
-          onInput=${(e: any) => setCardUrl(e.target.value)}
-          placeholder="https://agent.example.com"
-          style=${inputStyle}
-        />
-        <p style=${{ fontSize: "0.75rem", color: "var(--text-dimmer)", marginTop: "0.4rem" }}>
-          The URL where the agent publishes its Agent Card. Orchestral will fetch /.well-known/agent-card.json.
-          OIDC credentials are automatically configured for agents on the same identity provider.
-        </p>
+      <div style=${{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
+        <button style=${tabStyle(mode === "url")} onClick=${() => { setMode("url"); setError(""); setResolved(null); }}>
+          🌐 By URL
+        </button>
+        <button style=${tabStyle(mode === "atproto")} onClick=${() => { setMode("atproto"); setError(""); setResolved(null); }}>
+          🦋 By ATProto DID / Handle
+        </button>
       </div>
 
-      ${error && html`<div style=${{ padding: "0.75rem", background: "rgba(239,68,68,0.1)", border: "1px solid var(--danger)", borderRadius: "var(--radius)", color: "var(--danger)", fontSize: "0.85rem", marginBottom: "1rem" }}>
+      ${mode === "url" && html`
+        <div style=${{ marginBottom: "1.5rem" }}>
+          <label style=${{ display: "block", fontSize: "0.85rem", color: "var(--text-dim)", marginBottom: "0.4rem" }}>
+            Agent Card URL
+          </label>
+          <input
+            type="text"
+            value=${cardUrl}
+            onInput=${(e: any) => setCardUrl(e.target.value)}
+            placeholder="https://agent.example.com"
+            style=${inputStyle}
+          />
+          <p style=${{ fontSize: "0.75rem", color: "var(--text-dimmer)", marginTop: "0.4rem" }}>
+            The URL where the agent publishes its Agent Card. Orchestral will fetch /.well-known/agent-card.json.
+            OIDC credentials are automatically configured for agents on the same identity provider.
+          </p>
+        </div>
+      `}
+
+      ${mode === "atproto" && html`
+        <div style=${{ marginBottom: "1.5rem" }}>
+          <label style=${{ display: "block", fontSize: "0.85rem", color: "var(--text-dim)", marginBottom: "0.4rem" }}>
+            ATProto DID or Handle
+          </label>
+          <div style=${{ display: "flex", gap: "0.5rem" }}>
+            <input
+              type="text"
+              value=${atprotoId}
+              onInput=${(e: any) => { setAtprotoId(e.target.value); setResolved(null); }}
+              placeholder="@agent.bsky.social or did:plc:…"
+              style=${{ ...inputStyle, flex: 1 }}
+            />
+            <button
+              onClick=${handleResolve}
+              disabled=${!atprotoId.trim() || resolving}
+              style=${{
+                padding: "0.6rem 1rem", borderRadius: "var(--radius)", background: "var(--bg-card)",
+                border: "1px solid var(--border)", color: "var(--text)", cursor: "pointer",
+                fontWeight: 600, fontSize: "0.85rem", whiteSpace: "nowrap",
+                opacity: (!atprotoId.trim() || resolving) ? 0.5 : 1,
+              }}
+            >
+              ${resolving ? "Resolving…" : "Preview"}
+            </button>
+          </div>
+          <p style=${{ fontSize: "0.75rem", color: "var(--text-dimmer)", marginTop: "0.4rem" }}>
+            Enter an ATProto handle (e.g. <code>agent.bsky.social</code>) or DID (e.g. <code>did:plc:…</code>).
+            Orchestral resolves it to a PDS, looks up the <code>app.orchestral.agentCard</code> record,
+            and falls back to <code>/.well-known/agent-card.json</code> on the PDS.
+          </p>
+
+          ${resolved && html`
+            <div style=${{
+              marginTop: "1rem", padding: "0.9rem", background: "rgba(34,197,94,0.06)",
+              border: "1px solid var(--success)", borderRadius: "var(--radius)", fontSize: "0.8rem",
+            }}>
+              <div style=${{ fontWeight: 700, color: "var(--success)", marginBottom: "0.4rem" }}>✓ Resolved</div>
+              ${[
+                ["DID", resolved.did],
+                ["PDS", resolved.pdsEndpoint],
+                ["Card URL", resolved.cardUrl],
+                ["Source", resolved.fromRecord ? "app.orchestral.agentCard record" : "/.well-known/agent-card.json (fallback)"],
+              ].map(([label, value]) => html`
+                <div key=${label} style=${{ display: "flex", gap: "0.5rem", marginTop: "0.2rem" }}>
+                  <span style=${{ minWidth: "70px", color: "var(--text-dim)" }}>${label}</span>
+                  <span style=${{ color: "var(--text)", wordBreak: "break-all" }}>${value}</span>
+                </div>
+              `)}
+            </div>
+          `}
+        </div>
+      `}
+
+      ${error && html`<div style=${{
+        padding: "0.75rem", background: "rgba(239,68,68,0.1)", border: "1px solid var(--danger)",
+        borderRadius: "var(--radius)", color: "var(--danger)", fontSize: "0.85rem", marginBottom: "1rem",
+      }}>
         ${error}
       </div>`}
 
       <button
         onClick=${handleAdd}
-        disabled=${!cardUrl || loading}
+        disabled=${!canAdd || loading}
         style=${{
           padding: "0.6rem 1.5rem", borderRadius: "var(--radius)", background: "var(--accent)",
           color: "white", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem",
-          opacity: (!cardUrl || loading) ? 0.5 : 1,
+          opacity: (!canAdd || loading) ? 0.5 : 1,
         }}
       >
         ${loading ? "Connecting…" : "Add Agent"}
@@ -781,6 +883,7 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
           fontSize: "0.78rem", color: "var(--text-dim)", display: "flex", flexDirection: "column", gap: "0.35rem",
         }}>
           ${[
+            ["ATProto DID", agentDetail?.atproto_did],
             ["Card URL", agentDetail?.card_url],
             ["Endpoint URL", agentDetail?.agent_card?.url],
             ["Protocol version", agentDetail?.agent_card?.protocolVersion],
