@@ -193,7 +193,7 @@ const JOB_STATUS_LABEL: Record<string, string> = {
   queued: "Queued",
   provisioning: "Provisioning container…",
   cloning: "Cloning repo…",
-  running: "Bot is working…",
+  running: "Agent is working…",
   patching: "Applying patch…",
   opening_pr: "Opening PR…",
   done: "Done",
@@ -273,8 +273,8 @@ function JobsView({ agents }: any) {
     <div style=${{ maxWidth: "760px", margin: "0 auto", padding: "2rem", overflowY: "auto", flex: 1 }}>
       <h2 style=${{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "0.25rem" }}>🚀 Jobs</h2>
       <p style=${{ fontSize: "0.8rem", color: "var(--text-dim)", marginBottom: "1.5rem" }}>
-        Pick a repo and a bot, describe what to do, and orchestral spins up a fresh container,
-        asks the bot for a patch, and opens a pull request.
+        Pick a repo and an agent, describe what to do, and orchestral spins up a fresh container,
+        asks the agent for a patch, and opens a pull request.
       </p>
 
       ${!github?.configured && html`
@@ -319,12 +319,12 @@ function JobsView({ agents }: any) {
           </div>
 
           <div>
-            <label style=${{ display: "block", fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "0.3rem" }}>Bot</label>
+            <label style=${{ display: "block", fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "0.3rem" }}>Agent</label>
             <select value=${agentId} onChange=${(e: any) => setAgentId(e.target.value)} style=${{ ...inputStyle }}>
-              <option value="">Select a bot…</option>
+              <option value="">Select an agent…</option>
               ${connectedAgents.map((a: any) => html`<option key=${a.id} value=${a.id}>${a.name}</option>`)}
             </select>
-            ${connectedAgents.length === 0 && html`<p style=${{ fontSize: "0.7rem", color: "var(--text-dimmer)", marginTop: "0.3rem" }}>No connected bots yet — add one first.</p>`}
+            ${connectedAgents.length === 0 && html`<p style=${{ fontSize: "0.7rem", color: "var(--text-dimmer)", marginTop: "0.3rem" }}>No connected agents yet — add one first.</p>`}
           </div>
 
           <div>
