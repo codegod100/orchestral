@@ -392,6 +392,9 @@ function AddAgent({ onAdded }: any) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const isAtproto = /^(did:(plc|web):[a-zA-Z0-9._:%-]+|@?[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+)$/.test(cardUrl.trim()) &&
+    !cardUrl.trim().startsWith("http");
+
   async function handleAdd() {
     setError("");
     setLoading(true);
@@ -414,19 +417,26 @@ function AddAgent({ onAdded }: any) {
 
       <div style=${{ marginBottom: "1.5rem" }}>
         <label style=${{ display: "block", fontSize: "0.85rem", color: "var(--text-dim)", marginBottom: "0.4rem" }}>
-          Agent Card URL
+          Agent Card URL, ATProto DID, or handle
         </label>
         <input
           type="text"
           value=${cardUrl}
           onInput=${(e: any) => setCardUrl(e.target.value)}
-          placeholder="https://agent.example.com"
+          onKeyDown=${(e: any) => { if (e.key === "Enter" && cardUrl && !loading) handleAdd(); }}
+          placeholder="https://agent.example.com  or  @agent.bsky.social  or  did:plc:…"
           style=${inputStyle}
         />
-        <p style=${{ fontSize: "0.75rem", color: "var(--text-dimmer)", marginTop: "0.4rem" }}>
-          The URL where the agent publishes its Agent Card. Orchestral will fetch /.well-known/agent-card.json.
-          OIDC credentials are automatically configured for agents on the same identity provider.
-        </p>
+        ${isAtproto
+          ? html`<p style=${{ fontSize: "0.75rem", color: "var(--text-dimmer)", marginTop: "0.4rem" }}>
+              ATProto identity detected — orchestral will resolve the DID document and PDS record to discover the A2A URL.
+            </p>`
+          : html`<p style=${{ fontSize: "0.75rem", color: "var(--text-dimmer)", marginTop: "0.4rem" }}>
+              URL to the agent's A2A card (orchestral appends /.well-known/agent-card.json if needed).
+              You can also enter an ATProto handle (e.g. <code>@agent.bsky.social</code>) or DID
+              (e.g. <code>did:plc:…</code>) to discover the agent via the ATProto network.
+            </p>`
+        }
       </div>
 
       ${error && html`<div style=${{ padding: "0.75rem", background: "rgba(239,68,68,0.1)", border: "1px solid var(--danger)", borderRadius: "var(--radius)", color: "var(--danger)", fontSize: "0.85rem", marginBottom: "1rem" }}>
@@ -442,7 +452,7 @@ function AddAgent({ onAdded }: any) {
           opacity: (!cardUrl || loading) ? 0.5 : 1,
         }}
       >
-        ${loading ? "Connecting…" : "Add Agent"}
+        ${loading ? (isAtproto ? "Resolving ATProto identity…" : "Connecting…") : "Add Agent"}
       </button>
     </div>
   `;
@@ -781,6 +791,8 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
           fontSize: "0.78rem", color: "var(--text-dim)", display: "flex", flexDirection: "column", gap: "0.35rem",
         }}>
           ${[
+            agentDetail?.atproto_handle ? ["ATProto handle", `@${agentDetail.atproto_handle}`] : null,
+            agentDetail?.atproto_did ? ["ATProto DID", agentDetail.atproto_did] : null,
             ["Card URL", agentDetail?.card_url],
             ["Endpoint URL", agentDetail?.agent_card?.url],
             ["Protocol version", agentDetail?.agent_card?.protocolVersion],
@@ -790,9 +802,9 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
             ["Streaming", agentDetail?.agent_card?.capabilities?.streaming ? "yes" : "no"],
             ["Skills", (agentDetail?.agent_card?.skills || []).map((s: any) => s.name || s.id).filter(Boolean).join(", ") || "—"],
             ["Added", agentDetail?.created_at ? new Date(agentDetail.created_at * 1000).toLocaleString() : undefined],
-          ].filter(([, v]) => v !== undefined && v !== null && v !== "").map(([label, value]) => html`
+          ].filter(Boolean).filter(([, v]) => v !== undefined && v !== null && v !== "").map(([label, value]) => html`
             <div key=${label} style=${{ display: "flex", gap: "0.6rem" }}>
-              <span style=${{ minWidth: "110px", flexShrink: 0, color: "var(--text-dimmer)" }}>${label}</span>
+              <span style=${{ minWidth: "120px", flexShrink: 0, color: "var(--text-dimmer)" }}>${label}</span>
               <span style=${{ color: "var(--text)", wordBreak: "break-all" }}>${value}</span>
             </div>
           `)}
