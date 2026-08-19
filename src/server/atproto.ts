@@ -1,3 +1,6 @@
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
+
 /**
  * ATProto identity resolution for orchestral.
  *
@@ -175,6 +178,75 @@ export interface AtprotoResolution {
   a2aUrl: string;
 }
 
+function isPrivateIpv4Address(ip: string): boolean {
+  const parts = ip.split(".").map(Number);
+  if (parts.length !== 4 || parts.some(part => !Number.isInteger(part) || part < 0 || part > 255)) {
+    return true;
+  }
+
+  const [a, b] = parts;
+  if (a === 0 || a === 10 || a === 127) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 198 && (b === 18 || b === 19)) return true;
+  if (a >= 224) return true;
+  return false;
+}
+
+function isPrivateIpv6Address(ip: string): boolean {
+  const normalized = ip.toLowerCase();
+  if (normalized === "::" || normalized === "::1") return true;
+  if (normalized.startsWith("fc") || normalized.startsWith("fd")) return true;
+  if (normalized.startsWith("fe8") || normalized.startsWith("fe9") || normalized.startsWith("fea") || normalized.startsWith("feb")) return true;
+  if (normalized.startsWith("::ffff:")) {
+    return isPrivateIpv4Address(normalized.slice("::ffff:".length));
+  }
+  return false;
+}
+
+function isPublicIpAddress(ip: string): boolean {
+  const family = isIP(ip);
+  if (family === 4) return !isPrivateIpv4Address(ip);
+  if (family === 6) return !isPrivateIpv6Address(ip);
+  return false;
+}
+
+export async function validateResolvedA2AUrl(url: string): Promise<string> {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`Resolved A2A URL is invalid: ${url}`);
+  }
+
+  if (parsed.protocol !== "https:") {
+    throw new Error("Resolved A2A URL must use HTTPS");
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  if (
+    !hostname ||
+    hostname === "localhost" ||
+    hostname.endsWith(".localhost") ||
+    hostname.endsWith(".local") ||
+    (!hostname.includes(".") && isIP(hostname) === 0)
+  ) {
+    throw new Error("Resolved A2A URL must use a public hostname");
+  }
+
+  const resolved = await lookup(hostname, { all: true, verbatim: true });
+  if (resolved.length === 0) {
+    throw new Error("Resolved A2A URL hostname did not resolve");
+  }
+  if (resolved.some(address => !isPublicIpAddress(address.address))) {
+    throw new Error("Resolved A2A URL hostname resolves to a private or loopback address");
+  }
+
+  return parsed.toString();
+}
+
 /**
  * Resolve an ATProto DID or handle to an A2A agent card URL.
  *
@@ -198,14 +270,14 @@ export async function resolveAtprotoAgent(input: string): Promise<AtprotoResolut
   // 1. DID document service endpoint (fastest — no extra HTTP round trip)
   const fromDoc = extractA2AUrlFromDidDoc(doc);
   if (fromDoc) {
-    return { did, handle, a2aUrl: fromDoc };
+    return { did, handle, a2aUrl: await validateResolvedA2AUrl(fromDoc) };
   }
 
   // 2. PDS record lookup
   const pdsUrl = extractPdsUrl(doc);
   const record = await fetchAgentCardRecord(pdsUrl, did);
   if (record?.a2aUrl) {
-    return { did, handle, a2aUrl: record.a2aUrl };
+    return { did, handle, a2aUrl: await validateResolvedA2AUrl(record.a2aUrl) };
   }
 
   throw new Error(
