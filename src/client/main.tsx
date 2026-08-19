@@ -389,20 +389,16 @@ function JobsView({ agents }: any) {
 
 function AddAgent({ onAdded }: any) {
   const [cardUrl, setCardUrl] = useState("");
-  const [clientId, setClientId] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState<any>(null);
 
-  async function handlePreview() {
+  async function handleAdd() {
     setError("");
-    setPreview(null);
     setLoading(true);
     try {
       const data = await api("/agents", {
         method: "POST",
-        body: JSON.stringify({ card_url: cardUrl, oidc_client_id: clientId, oidc_client_secret: clientSecret }),
+        body: JSON.stringify({ card_url: cardUrl }),
       });
       onAdded(data.agent);
     } catch (e: any) {
@@ -428,32 +424,17 @@ function AddAgent({ onAdded }: any) {
           style=${inputStyle}
         />
         <p style=${{ fontSize: "0.75rem", color: "var(--text-dimmer)", marginTop: "0.4rem" }}>
-          The URL where the agent publishes its Agent Card. Orchestral will fetch /.well-known/agent-card.json
+          The URL where the agent publishes its Agent Card. Orchestral will fetch /.well-known/agent-card.json.
+          OIDC credentials are automatically configured for agents on the same identity provider.
         </p>
       </div>
-
-      <details style=${{ marginBottom: "1.5rem" }}>
-        <summary style=${{ cursor: "pointer", fontSize: "0.85rem", color: "var(--text-dim)" }}>
-          OIDC client ID (optional — only needed for authorization code flow)
-        </summary>
-        <div style=${{ marginTop: "0.75rem" }}>
-          <p style=${{ fontSize: "0.75rem", color: "var(--text-dimmer)", marginBottom: "0.5rem" }}>
-            If the agent requires OIDC, you can connect via device code flow (no configuration needed),
-            or provide a client ID for the authorization code flow (requires a registered redirect URI).
-          </p>
-          <label style=${{ display: "block", fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "0.3rem" }}>
-            Client ID (optional)
-          </label>
-          <input type="text" value=${clientId} onInput=${(e: any) => setClientId(e.target.value)} style=${inputStyle} />
-        </div>
-      </details>
 
       ${error && html`<div style=${{ padding: "0.75rem", background: "rgba(239,68,68,0.1)", border: "1px solid var(--danger)", borderRadius: "var(--radius)", color: "var(--danger)", fontSize: "0.85rem", marginBottom: "1rem" }}>
         ${error}
       </div>`}
 
       <button
-        onClick=${handlePreview}
+        onClick=${handleAdd}
         disabled=${!cardUrl || loading}
         style=${{
           padding: "0.6rem 1.5rem", borderRadius: "var(--radius)", background: "var(--accent)",
@@ -703,11 +684,13 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
     setConnecting(true);
     setError("");
     try {
-      // Save credentials first
-      await api(`/agents/${agent.id}/credentials`, {
-        method: "POST",
-        body: JSON.stringify({ client_id: clientIdInput, client_secret: clientSecretInput }),
-      });
+      // Only save credentials when the user manually provided them (not baked in)
+      if (!agentDetail?.has_oidc_credentials && clientIdInput) {
+        await api(`/agents/${agent.id}/credentials`, {
+          method: "POST",
+          body: JSON.stringify({ client_id: clientIdInput, client_secret: clientSecretInput }),
+        });
+      }
       // Redirect to the OIDC authorization flow
       window.location.href = `/api/agents/${agent.id}/connect`;
     } catch (e) {
@@ -818,54 +801,72 @@ function ChatView({ agent, onRefresh, onDelete }: any) {
 
       ${needsAuth && html`
         <div style=${{ padding: "1.5rem", borderBottom: "1px solid var(--border)", maxWidth: "600px" }}>
-          <p style=${{ color: "var(--text)", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
-            This agent requires OIDC via Pocket ID.
-          </p>
-          <p style=${{ color: "var(--text-dim)", marginBottom: "1rem", fontSize: "0.8rem" }}>
-            Enter think's Pocket ID client ID. If the client is set to <strong>public</strong> in
-            <a href="https://id.openbao.boxd.sh/settings/admin/oidc-clients" target="_blank" style=${{ color: "var(--accent)" }}>Pocket ID admin</a>,
-            no secret is needed — PKCE handles it. Otherwise include the secret too.
-          </p>
-          <div style=${{ marginBottom: "0.75rem" }}>
-            <label style=${{ display: "block", fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "0.3rem" }}>
-              Client ID
-            </label>
-            <input
-              type="text"
-              value=${clientIdInput}
-              onInput=${(e: any) => setClientIdInput(e.target.value)}
-              placeholder="Pocket ID client ID"
-              style=${{ ...inputStyle, width: "100%" }}
-            />
-          </div>
-          <div style=${{ marginBottom: "0.75rem" }}>
-            <label style=${{ display: "block", fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "0.3rem" }}>
-              Client Secret
-            </label>
-            <input
-              type="password"
-              value=${clientSecretInput}
-              onInput=${(e: any) => setClientSecretInput(e.target.value)}
-              placeholder="Pocket ID client secret"
-              style=${{ ...inputStyle, width: "100%" }}
-            />
-          </div>
-          <div style=${{ padding: "0.6rem", background: "var(--bg)", borderRadius: "8px", marginBottom: "1rem", fontSize: "0.75rem", color: "var(--text-dim)" }}>
-            <strong style=${{ color: "var(--warning)" }}>One-time setup:</strong> Add this redirect URI to this client in Pocket ID:
-            <br/>
-            <code style=${{ color: "var(--accent)", fontSize: "0.7rem", wordBreak: "break-all" }}>${redirectUri}</code>
-            <br/>
-            <a href="https://id.openbao.boxd.sh/settings/admin/oidc-clients" target="_blank" style=${{ color: "var(--accent)", fontSize: "0.7rem" }}>
-              → Pocket ID admin
-            </a>
-          </div>
-          <button onClick=${handleConnect} disabled=${!clientIdInput || connecting} style=${{
-            padding: "0.6rem 1.5rem", borderRadius: "var(--radius)", background: "var(--accent)",
-            color: "white", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem",
-            opacity: (!clientIdInput || connecting) ? 0.5 : 1,
-          }}>
-            ${connecting ? "Redirecting…" : "🔑 Connect"}
-          </button>
+          ${agentDetail?.has_oidc_credentials ? html`
+            <p style=${{ color: "var(--text)", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
+              This agent requires OIDC. Credentials are configured automatically.
+            </p>
+            <div style=${{ padding: "0.6rem", background: "var(--bg)", borderRadius: "8px", marginBottom: "1rem", fontSize: "0.75rem", color: "var(--text-dim)" }}>
+              <strong style=${{ color: "var(--warning)" }}>One-time setup:</strong> Ensure this redirect URI is registered in your identity provider:
+              <br/>
+              <code style=${{ color: "var(--accent)", fontSize: "0.7rem", wordBreak: "break-all" }}>${redirectUri}</code>
+            </div>
+            <button onClick=${handleConnect} disabled=${connecting} style=${{
+              padding: "0.6rem 1.5rem", borderRadius: "var(--radius)", background: "var(--accent)",
+              color: "white", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem",
+              opacity: connecting ? 0.5 : 1,
+            }}>
+              ${connecting ? "Redirecting…" : "🔑 Connect"}
+            </button>
+          ` : html`
+            <p style=${{ color: "var(--text)", marginBottom: "0.5rem", fontSize: "0.9rem" }}>
+              This agent requires OIDC authentication.
+            </p>
+            <p style=${{ color: "var(--text-dim)", marginBottom: "1rem", fontSize: "0.8rem" }}>
+              Enter the Pocket ID client ID for this agent. If the client is set to <strong>public</strong> in
+              <a href="https://id.openbao.boxd.sh/settings/admin/oidc-clients" target="_blank" style=${{ color: "var(--accent)" }}>Pocket ID admin</a>,
+              no secret is needed — PKCE handles it. Otherwise include the secret too.
+            </p>
+            <div style=${{ marginBottom: "0.75rem" }}>
+              <label style=${{ display: "block", fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "0.3rem" }}>
+                Client ID
+              </label>
+              <input
+                type="text"
+                value=${clientIdInput}
+                onInput=${(e: any) => setClientIdInput(e.target.value)}
+                placeholder="Pocket ID client ID"
+                style=${{ ...inputStyle, width: "100%" }}
+              />
+            </div>
+            <div style=${{ marginBottom: "0.75rem" }}>
+              <label style=${{ display: "block", fontSize: "0.75rem", color: "var(--text-dim)", marginBottom: "0.3rem" }}>
+                Client Secret
+              </label>
+              <input
+                type="password"
+                value=${clientSecretInput}
+                onInput=${(e: any) => setClientSecretInput(e.target.value)}
+                placeholder="Pocket ID client secret (leave blank for public clients)"
+                style=${{ ...inputStyle, width: "100%" }}
+              />
+            </div>
+            <div style=${{ padding: "0.6rem", background: "var(--bg)", borderRadius: "8px", marginBottom: "1rem", fontSize: "0.75rem", color: "var(--text-dim)" }}>
+              <strong style=${{ color: "var(--warning)" }}>One-time setup:</strong> Add this redirect URI to this client in Pocket ID:
+              <br/>
+              <code style=${{ color: "var(--accent)", fontSize: "0.7rem", wordBreak: "break-all" }}>${redirectUri}</code>
+              <br/>
+              <a href="https://id.openbao.boxd.sh/settings/admin/oidc-clients" target="_blank" style=${{ color: "var(--accent)", fontSize: "0.7rem" }}>
+                → Pocket ID admin
+              </a>
+            </div>
+            <button onClick=${handleConnect} disabled=${!clientIdInput || connecting} style=${{
+              padding: "0.6rem 1.5rem", borderRadius: "var(--radius)", background: "var(--accent)",
+              color: "white", border: "none", cursor: "pointer", fontWeight: 600, fontSize: "0.9rem",
+              opacity: (!clientIdInput || connecting) ? 0.5 : 1,
+            }}>
+              ${connecting ? "Redirecting…" : "🔑 Connect"}
+            </button>
+          `}
         </div>
       `}
 

@@ -266,6 +266,8 @@ app.get("/api/agents/:id", (c) => {
     card_url: agent.card_url,
     security_type: agent.security_type,
     auth_state: agent.auth_state,
+    oidc_issuer: agent.oidc_issuer ?? null,
+    has_oidc_credentials: !!(agent.oidc_client_id),
     agent_card: JSON.parse(agent.agent_card_json),
     created_at: agent.created_at,
   });
@@ -298,23 +300,27 @@ app.post("/api/agents", async (c) => {
   if (security.type === "none") {
     authState = "connected";
   } else if (security.type === "oidc") {
-    // Check if the agent's OIDC issuer matches our console OIDC issuer.
-    // If so, we can reuse the console login token — no separate OIDC flow needed.
-    const consoleToken = getSetting("console_oidc_token");
-    const consoleIssuer = CONSOLE_OIDC_ISSUER;
+    const consoleIssuer = CONSOLE_OIDC_ISSUER.replace(/\/$/, "");
     const agentIssuer = security.issuer?.replace(/\/$/, "") ?? "";
-    const matchesConsole = agentIssuer === consoleIssuer.replace(/\/$/, "") && consoleToken;
+    const sameIssuer = agentIssuer === consoleIssuer;
 
-    if (matchesConsole) {
+    // Bake in console OIDC credentials for agents on the same issuer so users
+    // don't have to manually enter a client ID per agent.
+    if (sameIssuer && !oidc_client_id) {
+      oidc_client_id = CONSOLE_OIDC_CLIENT_ID;
+      oidc_client_secret = oidc_client_secret ?? CONSOLE_OIDC_CLIENT_SECRET;
+    }
+
+    // If the console token is already available, reuse it directly.
+    const consoleToken = getSetting("console_oidc_token");
+    if (sameIssuer && consoleToken) {
       authState = "connected";
       accessToken = consoleToken;
       refreshToken = getSetting("console_oidc_refresh");
       const expiresStr = getSetting("console_oidc_expires");
       tokenExpiresAt = expiresStr ? Number(expiresStr) : null;
     } else {
-      // OIDC agent — user can connect via device code flow (no redirect URI or secret needed)
-      // or by providing OIDC credentials for the authorization code flow
-      authState = oidc_client_id ? "needs_auth" : "needs_auth";
+      authState = "needs_auth";
     }
   } else {
     authState = "needs_auth";
@@ -402,7 +408,7 @@ app.post("/api/agents/:id/device-code", async (c) => {
 
   const issuer = agent.oidc_issuer!;
   const discovery = await discoverOIDC(issuer);
-  const clientId = agent.oidc_client_id || "orchestral";
+  const clientId = agent.oidc_client_id || CONSOLE_OIDC_CLIENT_ID;
 
   const deviceCode = await startDeviceCode({
     deviceAuthorizationEndpoint: discovery.device_authorization_endpoint,
