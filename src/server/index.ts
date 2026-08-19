@@ -9,6 +9,9 @@
  * Uses Bun + Hono. The built React frontend is served from /public.
  */
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { getCookie, setCookie } from "hono/cookie";
@@ -835,6 +838,33 @@ app.post("/api/conversations/:convId/stream", async (c) => {
       }
     }
   });
+});
+
+// ─── Root with server-side initial data ────────────────────────────────────────
+
+// Embeds initial data into the HTML so the client avoids a loading flash.
+// JSON is encoded with Unicode escapes so it is safe to embed inside a
+// <script> tag even when values contain sequences like </script>.
+function jsonForScript(data: unknown): string {
+  return JSON.stringify(data)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026");
+}
+
+const INDEX_HTML = readFileSync(join(import.meta.dir, "../../public/index.html"), "utf-8");
+
+app.get("/", async (c) => {
+  const session = await getSessionFromRequest(c.req.raw);
+  const agents = listAgents();
+  const user = session ? { email: session.email, name: session.name } : null;
+
+  const initial = jsonForScript({ user, agents });
+  const html = INDEX_HTML.replace(
+    "</head>",
+    `  <script>window.__ORCHESTRAL_INITIAL__ = ${initial};</script>\n  </head>`,
+  );
+  return c.html(html);
 });
 
 // ─── Static file serving ───────────────────────────────────────────────────────

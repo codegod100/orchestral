@@ -19,11 +19,12 @@ async function api(path: string, opts?: RequestInit) {
 // ─── Components ────────────────────────────────────────────────────────────────
 
 function App() {
-  const [agents, setAgents] = useState<any[]>([]);
+  const initial = (globalThis as any).__ORCHESTRAL_INITIAL__ ?? null;
+  const [agents, setAgents] = useState<any[]>(initial?.agents ?? []);
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [view, setView] = useState<"list" | "chat" | "add" | "jobs">("list");
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(initial?.user ?? null);
+  const [loading, setLoading] = useState(!initial);
 
   const refreshAgents = useCallback(async () => {
     try {
@@ -52,6 +53,7 @@ function App() {
   }, [refreshAgents]);
 
   useEffect(() => {
+    if (initial) return;
     (async () => {
       try {
         const me = await api("/auth/me");
