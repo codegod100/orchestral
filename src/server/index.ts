@@ -38,7 +38,7 @@ import {
 } from "./a2a-client.ts";
 import { fetchResolvedAgentCard, isAtprotoInput, resolveAtprotoAgent } from "./atproto.ts";
 import {
-  buildGithubAuthorizeUrl, exchangeGithubCode, getGithubUser, listGithubRepos,
+  buildGithubAuthorizeUrl, exchangeGithubCode, getGithubUser, listGithubRepos, GithubApiError,
 } from "./github.ts";
 import { runJob } from "./jobs.ts";
 
@@ -637,6 +637,12 @@ app.get("/api/github/repos", async (c) => {
     });
   } catch (e) {
     console.error("Failed to list GitHub repos:", e);
+    if (e instanceof GithubApiError && e.status === 401) {
+      // Token is invalid or expired — clear it so the UI prompts reconnect
+      setSetting("github_token", "");
+      setSetting("github_login", "");
+      return c.json({ error: "GitHub token expired — please reconnect", needs_reconnect: true }, 401);
+    }
     return c.json({ error: (e as Error).message }, 502);
   }
 });

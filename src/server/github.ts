@@ -60,6 +60,13 @@ export interface GithubRepo {
   updated_at: string;
 }
 
+export class GithubApiError extends Error {
+  constructor(public readonly status: number, message: string) {
+    super(message);
+    this.name = "GithubApiError";
+  }
+}
+
 export async function listGithubRepos(token: string): Promise<GithubRepo[]> {
   const repos: GithubRepo[] = [];
   let page = 1;
@@ -68,7 +75,14 @@ export async function listGithubRepos(token: string): Promise<GithubRepo[]> {
       `${GITHUB_API}/user/repos?per_page=100&page=${page}&sort=updated&affiliation=owner,collaborator`,
       { headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" } }
     );
-    if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+    if (!res.ok) {
+      let message = `GitHub API error: ${res.status}`;
+      try {
+        const body = await res.json() as { message?: string };
+        if (body.message) message = body.message;
+      } catch { /* ignore parse errors */ }
+      throw new GithubApiError(res.status, message);
+    }
     const batch = (await res.json()) as GithubRepo[];
     repos.push(...batch);
     if (batch.length < 100) break;
