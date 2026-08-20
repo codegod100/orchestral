@@ -869,11 +869,13 @@ app.get("/", async (c) => {
 
 // ─── Static file serving ───────────────────────────────────────────────────────
 
-// Serve built frontend from /public
-app.use("/*", serveStatic({ root: "./public" }));
+// Serve built frontend from /public — use an absolute path so the server works
+// regardless of the working directory it is started from.
+const PUBLIC_DIR = join(import.meta.dir, "../../public");
+app.use("/*", serveStatic({ root: PUBLIC_DIR }));
 
-// SPA fallback
-app.get("/*", serveStatic({ path: "./public/index.html" }));
+// SPA fallback — also absolute so it works from any CWD.
+app.get("/*", serveStatic({ root: PUBLIC_DIR, path: "index.html" }));
 
 // ─── Error page ────────────────────────────────────────────────────────────────
 
